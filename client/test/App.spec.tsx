@@ -1,0 +1,172 @@
+import * as React from 'react';
+import {fireEvent, render} from '@testing-library/react-native';
+import config from '../config.json';
+import {App} from '../src/App';
+import {isValidFrontendUrl} from '../src/config';
+
+const mockGoBack = jest.fn();
+const mockInjectJavaScript = jest.fn();
+const mockHideSplash = jest.fn();
+const mockRemove = jest.fn();
+const mockAddBackListener = jest.fn();
+
+jest.mock('../config.json', () => ({
+  frontendUrl: 'https://cinelode.example:5173',
+}));
+
+jest.mock('@amazon-devices/webview', () => {
+  const react = jest.requireActual<typeof import('react')>('react');
+  return {
+    WebView: react.forwardRef<{
+      goBack: () => void;
+      injectJavaScript: (script: string) => void;
+    }, {testID?: string}>(
+      (props, ref) => {
+        react.useImperativeHandle(ref, () => ({
+          goBack: mockGoBack,
+          injectJavaScript: mockInjectJavaScript,
+        }));
+        return react.createElement('WebView', props);
+      },
+    ),
+  };
+});
+
+jest.mock('@amazon-devices/react-native-kepler', () => ({
+  usePreventHideSplashScreen: jest.fn(),
+  useHideSplashScreenCallback: () => mockHideSplash,
+  BackHandler: {
+    addEventListener: (event: string, handler: () => boolean) =>
+      mockAddBackListener(event, handler),
+  },
+  StyleSheet: {
+    create: (styles: unknown) => styles,
+    absoluteFillObject: {},
+    flatten: (style: unknown) => style,
+  },
+  View: 'View',
+  Text: 'Text',
+  Pressable: 'Pressable',
+}));
+
+describe('frontend URL', () => {
+  it.each([
+    ['https://cinelode.example:5173', true],
+    ['https://192.0.2.1/', true],
+    ['', false],
+    ['http://cinelode.example', false],
+    ['https://user:password@cinelode.example', false],
+    ['https://cinelode.example/path', false],
+    ['https://cinelode.example:65536', false],
+    ['http://10.0.0.5:5173', true], 
+    ['http://172.20.0.5:5173', true],
+  ])('validates %s', (url, expected) => {
+    expect(isValidFrontendUrl(url)).toBe(expected);
+  });
+});
+
+describe('App', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockAddBackListener.mockReturnValue({remove: mockRemove});
+    config.frontendUrl = 'https://cinelode.example:5173';
+  });
+
+  it('displays a configuration error and hides the splash screen', () => {
+    config.frontendUrl = '';
+    const screen = render(<App />);
+    expect(screen.getByText(/Frontend-URL/)).toBeTruthy();
+    expect(screen.queryByTestId('cinelode-webview')).toBeNull();
+    expect(mockHideSplash).toHaveBeenCalled();
+  });
+
+  it('shows loading and handles page load, back navigation and cleanup', () => {
+    const screen = render(<App />);
+    const webview = screen.getByTestId('cinelode-webview');
+    expect(screen.getByText('Cinelode wird geladen ...')).toBeTruthy();
+    const back = mockAddBackListener.mock.calls[0][1] as () => boolean;
+    expect(back()).toBe(true);
+    expect(mockInjectJavaScript).toHaveBeenCalled();
+    fireEvent(webview, 'loadStart', {nativeEvent: {canGoBack: false}});
+    expect(mockHideSplash).toHaveBeenCalled();
+    fireEvent(webview, 'load', {nativeEvent: {canGoBack: true}});
+    expect(screen.queryByText('Cinelode wird geladen ...')).toBeNull();
+    expect(mockHideSplash).toHaveBeenCalled();
+    expect(back()).toBe(true);
+    expect(mockGoBack).toHaveBeenCalled();
+    screen.unmount();
+    expect(mockRemove).toHaveBeenCalled();
+  });
+
+  it('forwards terminal back presses into the WebView', () => {
+    render(<App />);
+    const back = mockAddBackListener.mock.calls[0][1] as () => boolean;
+
+    expect(back()).toBe(true);
+    expect(mockInjectJavaScript).toHaveBeenCalledWith(
+      expect.stringContaining("key: 'BrowserBack'"),
+    );
+  });
+
+  it('uses the frontend history bridge for same-document navigation', () => {
+    const screen = render(<App />);
+    const webview = screen.getByTestId('cinelode-webview');
+    const back = mockAddBackListener.mock.calls[0][1] as () => boolean;
+
+    fireEvent(webview, 'message', {
+      nativeEvent: {
+        data: JSON.stringify({type: 'cinelode-history', canGoBack: true}),
+      },
+    });
+
+    expect(back()).toBe(true);
+    expect(mockGoBack).toHaveBeenCalledTimes(1);
+  });
+
+  it('rejects TLS errors, keeps the error visible and permits retry', () => {
+    const screen = render(<App />);
+    const webview = screen.getByTestId('cinelode-webview');
+    const cancel = jest.fn();
+    fireEvent(webview, 'sslError', {}, {cancel});
+    expect(cancel).toHaveBeenCalled();
+    expect(mockHideSplash).toHaveBeenCalled();
+    fireEvent(webview, 'load', {nativeEvent: {canGoBack: false}});
+    expect(screen.getByText(/TLS-Zertifikat/)).toBeTruthy();
+    fireEvent.press(screen.getByText('Erneut versuchen'));
+    expect(screen.getByText('Cinelode wird geladen ...')).toBeTruthy();
+  });
+
+  it('only treats HTTP errors in the main frame as page failures', () => {
+    const screen = render(<App />);
+    const webview = screen.getByTestId('cinelode-webview');
+    fireEvent(webview, 'httpError', {
+      nativeEvent: {statusCode: 404, isMainFrame: false},
+    });
+    expect(screen.queryByText(/HTTP 404/)).toBeNull();
+    fireEvent(webview, 'httpError', {
+      nativeEvent: {statusCode: 503, isMainFrame: true},
+    });
+    expect(screen.getByText(/HTTP 503/)).toBeTruthy();
+    expect(mockHideSplash).toHaveBeenCalled();
+  });
+
+  it('reports network errors', () => {
+    const screen = render(<App />);
+    fireEvent(screen.getByTestId('cinelode-webview'), 'error', {
+      nativeEvent: {code: -2, url: 'https://cinelode.example:5173/'},
+    });
+    expect(screen.getByText(/Fehler -2/)).toBeTruthy();
+    expect(mockHideSplash).toHaveBeenCalled();
+  });
+
+  it('does not replace the page for a failed media resource', () => {
+    const screen = render(<App />);
+    fireEvent(screen.getByTestId('cinelode-webview'), 'error', {
+      nativeEvent: {
+        code: -2,
+        url: 'https://cinelode.example:5173/api/movies/46/play?preview=true&cycle=4',
+      },
+    });
+    expect(screen.queryByText(/Fehler -2/)).toBeNull();
+  });
+});

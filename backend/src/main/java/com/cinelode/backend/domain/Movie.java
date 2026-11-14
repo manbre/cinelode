@@ -1,0 +1,20 @@
+package com.cinelode.backend.domain;
+
+/** Holds a movie and its catalogued metadata. */
+public record Movie(
+        Long id,
+        String title,
+        Integer year,
+        String filePath,
+        String franchise,
+        String genre,
+        String director,
+        String actors,
+        String plot,
+        String runtime,
+        String writer,
+        String rated,
+        Double imdbRating,
+        Integer oscarWins,
+        MetadataStatus metadataStatus) {
+}
