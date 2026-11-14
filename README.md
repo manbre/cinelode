@@ -53,6 +53,48 @@ processes or listen on LAN interfaces by default. Local `npm run dev` creates
 an authenticated development session automatically, so the login form is
 skipped. Catalog and media APIs still require an authenticated session.
 
+### Media library layout
+
+Set `CINELODE_MEDIA_ROOT` and `CINELODE_SERIES_ROOT` to readable directories
+outside the repository. Cinelode scans them using these naming conventions:
+
+```text
+movies/                                   # CINELODE_MEDIA_ROOT
+  Example Film (2024).mkv
+  Example Film (2024).jpg                 # optional movie poster
+  External Film (2022).txt               # contains an HTTP(S) URL
+  Example Collection/
+    01_First Film (2020).mkv
+    01_First Film (2020).jpg
+    02_Second Film (2023).mkv
+
+series/                                   # CINELODE_SERIES_ROOT
+  Example Series (2021)/
+    Example_01_01.mkv                    # season 01, episode 01
+    Example_01_02.mkv
+    Example_01.jpg                       # optional season 01 poster
+    Example_02_01.mkv
+    Example_02.jpg
+```
+
+- Movie names must end with a space, a four-digit year in parentheses, and
+  `.mkv` or `.txt`. Underscores in movie titles are displayed as spaces.
+  Movie folders are scanned recursively; the immediate parent folder is used
+  as the collection name. An optional numeric prefix such as `01_` gives
+  films within a collection an ordering.
+- A `.txt` movie entry must contain a valid HTTP(S) URL. When a matching MKV
+  and TXT entry have the same title, year and collection, the MKV is preferred.
+  Movie posters use the exact media filename without its extension, plus
+  `.jpg`.
+- Each series must have its own direct child directory named `Title (YYYY)`.
+  Episodes and optional season posters must be directly inside that directory,
+  not in separate season folders. Episode names end in `_SS_EE.mkv` and
+  poster names in `_SS.jpg`; `SS` and `EE` are two-digit season and episode
+  numbers. Duplicate episode or season-poster numbers are rejected. A series
+  without recognized episodes is not listed.
+- Symbolic links are not followed during discovery. Keep private media,
+  posters, and library contents out of Git and public repositories.
+
 ### LAN and Fire TV development
 
 LAN mode requires a certificate whose subject alternative name matches the
