@@ -6,8 +6,7 @@ seeking and byte-range endpoints require an authenticated session.
 FFprobe reads track metadata and duration together; results are cached in memory
 and refreshed when the media file's size or modification time changes.
 Previews select a random segment entirely within the middle 20%–80% of the
-media duration, up to 25 seconds long. Very short media use a shorter segment;
-this reduces, but cannot guarantee the exclusion of, opening and end credits.
+media duration, up to 25 seconds long.
 
 ## Requirements
 
