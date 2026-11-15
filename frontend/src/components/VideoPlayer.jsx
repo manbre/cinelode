@@ -145,7 +145,15 @@ function VideoPlayer({
       }`}
     >
       <div className="absolute inset-0 bg-black">
-        <video
+        {selectedMovie.source === 'EXTERNAL' ? (
+          selectedMovie.posterUrl && (
+            <img
+              src={selectedMovie.posterUrl}
+              alt=""
+              className="absolute inset-0 size-full object-contain"
+            />
+          )
+        ) : <video
           key={playbackUrl}
           ref={videoRef}
           src={playbackUrl}
@@ -202,7 +210,7 @@ function VideoPlayer({
           } ${
             previewTransition === 'fading' ? 'opacity-0' : 'opacity-100'
           }`}
-        />
+        />}
         {isFullPlayback && (
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#171719] via-black/10 to-black/20" />
         )}

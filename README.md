@@ -84,7 +84,11 @@ series/                                   # CINELODE_SERIES_ROOT
 - A `.txt` movie entry must contain a valid HTTP(S) URL. When a matching MKV
   and TXT entry have the same title, year and collection, the MKV is preferred.
   Movie posters use the exact media filename without its extension, plus
-  `.jpg`.
+  `.jpg`. External entries show their poster instead of a preview. Play opens
+  the link in a new browser tab, or passes it to the device on Vega. Whether
+  a particular link opens Prime Video depends on the device and registered
+  apps; opening a specific title in Prime Video has not yet been verified.
+  External entries stop automatic playback until Play is pressed.
 - Each series must have its own direct child directory named `Title (YYYY)`.
   Episodes and optional season posters must be directly inside that directory,
   not in separate season folders. Episode names end in `_SS_EE.mkv` and

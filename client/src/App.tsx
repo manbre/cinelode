@@ -2,6 +2,7 @@ import {WebView} from '@amazon-devices/webview';
 import {
   useHideSplashScreenCallback,
   usePreventHideSplashScreen,
+  Linking,
 } from '@amazon-devices/react-native-kepler';
 import * as React from 'react';
 import {useEffect, useRef, useState} from 'react';
@@ -81,6 +82,20 @@ export const App = () => {
     const frontend = config.frontendUrl.replace(/\/+$/, '');
     const failed = url.split(/[?#]/, 1)[0].replace(/\/+$/, '');
     return failed === frontend;
+  };
+
+  const isFrontendPage = (url: string) => {
+    const frontend = config.frontendUrl.replace(/\/+$/, '');
+    return url === frontend || ['/', '?', '#'].some(
+      separator => url.startsWith(frontend + separator),
+    );
+  };
+
+  const externalOpenFailed = () => {
+    console.error('Cinelode: external link could not be opened');
+    webRef.current?.injectJavaScript(
+      "window.dispatchEvent(new Event('cinelode-external-open-error')); true;",
+    );
   };
 
   return (
@@ -166,6 +181,23 @@ export const App = () => {
                 typeof parsedMessage.isFullscreen === 'boolean'
               ) {
                 webPlayerIsFullscreen.current = parsedMessage.isFullscreen;
+              } else if (
+                typeof parsedMessage === 'object' &&
+                parsedMessage !== null &&
+                'type' in parsedMessage &&
+                parsedMessage.type === 'cinelode-open-external' &&
+                'url' in parsedMessage &&
+                typeof parsedMessage.url === 'string'
+              ) {
+                if (!isFrontendPage(nativeEvent.url)) {
+                  console.warn('Cinelode: external link request from untrusted page');
+                  return;
+                }
+                if (!/^https?:\/\/(?:[a-z0-9](?:[a-z0-9.-]*[a-z0-9])?|\[[0-9a-f:.]+\])(?::\d{1,5})?(?:[/?#][^\s\\]*)?$/i.test(parsedMessage.url)) {
+                  externalOpenFailed();
+                  return;
+                }
+                Linking.openURL(parsedMessage.url).catch(externalOpenFailed);
               } else if (
                 typeof parsedMessage === 'object' &&
                 parsedMessage !== null &&

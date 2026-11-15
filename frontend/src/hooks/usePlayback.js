@@ -144,7 +144,7 @@ export function usePlayback({ selectedMovie, setError }) {
   }, [isFullPlayback, setError, showPlayerControls])
 
   useEffect(() => {
-    if (!isFullPlayback || !selectedMovie) {
+    if (!isFullPlayback || !selectedMovie || selectedMovie.source === 'EXTERNAL') {
       return undefined
     }
 

@@ -249,6 +249,13 @@ activation. Focus-visible styling is applied globally, focused controls scroll
 into view, and controls hidden by the fullscreen player are removed from the
 tab order. Text inputs, selects, and range controls retain their native
 keyboard behavior.
+
+For external movie entries, the frontend shows the poster and sends the
+validated HTTP(S) link to the wrapper when Play is pressed. The wrapper
+passes it to Vega's `Linking.openURL`; failure is shown in the frontend.
+The installed app or system determines how the link is handled. Opening
+Amazon links in Prime Video has not been verified on a device.
+
 Catalog selections add a same-document history entry. Escape/BrowserBack and
 the native Back path return from playback to the library before showing the
 exit confirmation at the catalog root. The last catalog focus is restored when

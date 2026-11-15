@@ -34,7 +34,7 @@ export function buildPlaybackUrl(selectedMovie, {
   playbackStart,
   previewIteration,
 }) {
-  if (!selectedMovie) {
+  if (!selectedMovie || selectedMovie.source === 'EXTERNAL') {
     return ''
   }
 

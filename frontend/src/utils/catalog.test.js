@@ -4,8 +4,15 @@ import {
   compareMovies,
   getNextPlaybackSelection,
   getPeople,
+  isMovie,
   normalizePersonName,
 } from './catalog.js'
+
+test('includes external movies in the movie catalog', () => {
+  assert.equal(isMovie({ source: 'EXTERNAL' }), true)
+  assert.equal(isMovie({ source: 'LOCAL' }), true)
+  assert.equal(isMovie({ source: 'SERIES' }), false)
+})
 
 test('sorts entries in the same franchise by their numeric franchise number', () => {
   const movies = [

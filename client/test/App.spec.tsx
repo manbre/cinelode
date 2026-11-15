@@ -9,6 +9,7 @@ const mockInjectJavaScript = jest.fn();
 const mockHideSplash = jest.fn();
 const mockRemove = jest.fn();
 const mockAddBackListener = jest.fn();
+const mockOpenURL = jest.fn();
 
 jest.mock('../config.json', () => ({
   frontendUrl: 'https://cinelode.example:5173',
@@ -35,6 +36,7 @@ jest.mock('@amazon-devices/webview', () => {
 jest.mock('@amazon-devices/react-native-kepler', () => ({
   usePreventHideSplashScreen: jest.fn(),
   useHideSplashScreenCallback: () => mockHideSplash,
+  Linking: {openURL: (...args: unknown[]) => mockOpenURL(...args)},
   BackHandler: {
     addEventListener: (event: string, handler: () => boolean) =>
       mockAddBackListener(event, handler),
@@ -122,6 +124,57 @@ describe('App', () => {
     expect(back()).toBe(true);
     expect(mockGoBack).toHaveBeenCalledTimes(1);
   });
+
+    it('passes trusted HTTP links to the device', () => {
+      mockOpenURL.mockResolvedValue(undefined);
+      const screen = render(<App />);
+      fireEvent(screen.getByTestId('cinelode-webview'), 'message', {
+        nativeEvent: {
+          url: 'https://cinelode.example:5173/',
+          data: JSON.stringify({
+            type: 'cinelode-open-external',
+            url: 'https://example.com/watch',
+          }),
+        },
+      });
+      expect(mockOpenURL).toHaveBeenCalledWith('https://example.com/watch');
+    });
+
+    it('rejects external requests from untrusted pages and unsafe schemes', () => {
+      const screen = render(<App />);
+      const webview = screen.getByTestId('cinelode-webview');
+      fireEvent(webview, 'message', {
+        nativeEvent: {
+          url: 'https://cinelode.example:5173.attacker.example/',
+          data: JSON.stringify({type: 'cinelode-open-external', url: 'https://example.com'}),
+        },
+      });
+      fireEvent(webview, 'message', {
+        nativeEvent: {
+          url: 'https://cinelode.example:5173/',
+          data: JSON.stringify({type: 'cinelode-open-external', url: 'data:text/plain,unsafe'}),
+        },
+      });
+      expect(mockOpenURL).not.toHaveBeenCalled();
+      expect(mockInjectJavaScript).toHaveBeenCalledWith(
+        expect.stringContaining('cinelode-external-open-error'),
+      );
+    });
+
+    it('reports a device failure to the frontend', async () => {
+      mockOpenURL.mockRejectedValue(new Error('No handler'));
+      const screen = render(<App />);
+      fireEvent(screen.getByTestId('cinelode-webview'), 'message', {
+        nativeEvent: {
+          url: 'https://cinelode.example:5173/',
+          data: JSON.stringify({type: 'cinelode-open-external', url: 'https://example.com'}),
+        },
+      });
+      await Promise.resolve();
+      expect(mockInjectJavaScript).toHaveBeenCalledWith(
+        expect.stringContaining('cinelode-external-open-error'),
+      );
+    });
 
   it('rejects TLS errors, keeps the error visible and permits retry', () => {
     const screen = render(<App />);

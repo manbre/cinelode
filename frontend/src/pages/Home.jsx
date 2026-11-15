@@ -7,7 +7,8 @@ import { useCatalog } from '../hooks/useCatalog'
 import { usePlayback } from '../hooks/usePlayback'
 import { useTvNavigation } from '../hooks/useTvNavigation'
 import { useCinelodeStore } from '../store'
-import { contentKey, getNextPlaybackSelection } from '../utils/catalog'
+import { contentKey, getNextPlaybackSelection, isMovie } from '../utils/catalog'
+import { openExternalMovie } from '../utils/externalPlayback'
 
 const MOVIES_API = '/api/movies'
 
@@ -307,7 +308,7 @@ function Home({ onLogout }) {
           ? seriesData.map((season) => ({ ...season, source: 'SERIES' }))
           : [])
 
-        const firstLocalMovie = loadedMovies.find((movie) => movie.source === 'LOCAL')
+        const firstLocalMovie = loadedMovies.find(isMovie)
         if (firstLocalMovie) {
           selectContent(firstLocalMovie)
           setSelectedMovie(firstLocalMovie)
@@ -350,7 +351,9 @@ function Home({ onLogout }) {
   const openMovie = useCallback((movie) => {
     if (selectedMovieRef.current?.id === movie.id
         && selectedMovieRef.current?.source === movie.source) {
-      resumePreview()
+      if (movie.source !== 'EXTERNAL') {
+        resumePreview()
+      }
       return
     }
     selectContent(movie)
@@ -407,8 +410,29 @@ function Home({ onLogout }) {
   }, [openMovie, openSeason, selectedMovie, togglePlaylistItem])
 
   const handleStartPlayback = useCallback(() => {
-    startPlayback()
-  }, [startPlayback])
+    if (selectedMovie?.source !== 'EXTERNAL') {
+      startPlayback()
+      return
+    }
+    setError('')
+    openExternalMovie(selectedMovie, {
+      fetchUrl: window.fetch.bind(window),
+      openWindow: () => {
+        const popup = window.open('', '_blank')
+        if (popup) {
+          popup.opener = null
+        }
+        return popup
+      },
+      nativeBridge: window.ReactNativeWebView,
+    }).catch((cause) => setError(cause.message || 'The external movie could not be opened.'))
+  }, [selectedMovie, setError, startPlayback])
+
+  useEffect(() => {
+    const onExternalOpenError = () => setError('The external link could not be opened on this device.')
+    window.addEventListener('cinelode-external-open-error', onExternalOpenError)
+    return () => window.removeEventListener('cinelode-external-open-error', onExternalOpenError)
+  }, [setError])
 
   const handlePlaybackEnded = useCallback(() => {
     if (!isFullPlayback || !selectedMovie) {
@@ -429,7 +453,11 @@ function Home({ onLogout }) {
     }
     selectContent(nextMovie)
     setSelectedMovie(nextMovie)
-    setIsFullPlayback(true)
+    if (nextMovie.source !== 'EXTERNAL') {
+      setIsFullPlayback(true)
+    } else if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => setError('Could not exit fullscreen.'))
+    }
   }, [
     isFullPlayback,
     clearPlaylist,
@@ -441,6 +469,7 @@ function Home({ onLogout }) {
     seriesSeasons,
     setIsFullPlayback,
     setSelectedMovie,
+    setError,
   ])
 
   const openEpisode = useCallback((episode) => {

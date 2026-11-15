@@ -1,6 +1,10 @@
 const movieTitleCollator = new Intl.Collator('de', { sensitivity: 'base' })
 const franchiseNumberCollator = new Intl.Collator('de', { numeric: true })
 
+export function isMovie(content) {
+  return content?.source === 'LOCAL' || content?.source === 'EXTERNAL'
+}
+
 export function contentKey(content) {
   return `${content.source}:${content.id}`
 }

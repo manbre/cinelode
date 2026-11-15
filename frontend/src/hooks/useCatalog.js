@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { compareMovies, getPeople, normalizePersonName } from '../utils/catalog'
+import { compareMovies, getPeople, isMovie, normalizePersonName } from '../utils/catalog'
 
 // Derives the sorted catalog, available filters, and visible results from Home's state.
 export function useCatalog({
@@ -13,7 +13,7 @@ export function useCatalog({
   selectedRated,
 }) {
   const localMovies = useMemo(
-    () => movies.filter((movie) => movie.source === 'LOCAL').sort(compareMovies),
+    () => movies.filter(isMovie).sort(compareMovies),
     [movies]
   )
 
