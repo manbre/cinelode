@@ -70,6 +70,16 @@ public class FfmpegPlaybackService {
             Integer requestedSubtitleTrack,
             boolean preview,
             double startSeconds) {
+        return play(movie, requestedAudioTrack, requestedSubtitleTrack, preview, false, startSeconds);
+    }
+
+    public ResponseEntity<StreamingResponseBody> play(
+            Movie movie,
+            Integer requestedAudioTrack,
+            Integer requestedSubtitleTrack,
+            boolean preview,
+            boolean widePreview,
+            double startSeconds) {
 
         if (movie.filePath() == null
                 || movie.filePath().toLowerCase(Locale.ROOT).endsWith(".txt")
@@ -80,7 +90,7 @@ public class FfmpegPlaybackService {
 
         try {
             return play(catalog.resolveMediaFile(movie.filePath()),
-                    requestedAudioTrack, requestedSubtitleTrack, preview, startSeconds);
+                    requestedAudioTrack, requestedSubtitleTrack, preview, widePreview, startSeconds);
         } catch (IllegalArgumentException exception) {
             return ResponseEntity.badRequest().build();
         }
@@ -91,6 +101,16 @@ public class FfmpegPlaybackService {
             Integer requestedAudioTrack,
             Integer requestedSubtitleTrack,
             boolean preview,
+            double startSeconds) {
+        return play(requestedMediaFile, requestedAudioTrack, requestedSubtitleTrack, preview, false, startSeconds);
+    }
+
+    public ResponseEntity<StreamingResponseBody> play(
+            Path requestedMediaFile,
+            Integer requestedAudioTrack,
+            Integer requestedSubtitleTrack,
+            boolean preview,
+            boolean widePreview,
             double startSeconds) {
 
         if (requestedMediaFile == null || !Double.isFinite(startSeconds) || startSeconds < 0.0) {
@@ -208,9 +228,12 @@ public class FfmpegPlaybackService {
             );
             String fadeInDuration = formatSeconds(fadeDuration);
             String fadeOutAt = formatSeconds(fadeOutStart);
+            String videoFilter = widePreview
+                    ? "crop='min(iw,ih*2.07)':'min(ih,iw/2.07)',scale=1280:618,setsar=1"
+                    : "scale=w='min(1280,iw)':h=-2";
             command.addAll(List.of(
                     "-map", "0:" + videoTrack.index(),
-                    "-vf", "scale=w='min(1280,iw)':h=-2,fade=t=in:st=0:d=" + fadeInDuration
+                    "-vf", videoFilter + ",fade=t=in:st=0:d=" + fadeInDuration
                             + ",fade=t=out:st=" + fadeOutAt + ":d=" + fadeInDuration,
                     "-af", "afade=t=in:st=0:d=" + fadeInDuration
                             + ",afade=t=out:st=" + fadeOutAt + ":d=" + fadeInDuration

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { buildPlaybackUrl, getPlaybackBase } from '../utils/playback'
+import { isNativeWebView } from '../utils/runtime'
 
 export function usePlayback({ selectedMovie, setError }) {
   const [previewIteration, setPreviewIteration] = useState(0)
@@ -39,6 +40,7 @@ export function usePlayback({ selectedMovie, setError }) {
     selectedSubtitleTrack,
     playbackStart,
     previewIteration,
+    widePreview: isNativeWebView(),
   }), [
     selectedMovie,
     isFullPlayback,

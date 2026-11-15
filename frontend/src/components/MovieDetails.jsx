@@ -74,7 +74,7 @@ function MovieDetails({
           <div className="flex flex-wrap items-center gap-x-3 gap-y-3 text-sm text-white/75">
             <span className="inline-flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
               {selectedMovie.imdbRating != null && (
-                <span className="inline-flex items-center gap-1 rounded border border-current px-2 py-1">
+                <span className="inline-flex items-center gap-1 px-2 py-1">
                   <Star size={12} fill="currentColor" />
                   {selectedMovie.imdbRating.toFixed(1)}
                 </span>

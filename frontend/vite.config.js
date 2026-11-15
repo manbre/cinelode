@@ -3,6 +3,7 @@ import process from 'node:process'
 import react from '@vitejs/plugin-react'
 import { defineConfig } from 'vite'
 import tailwindcss from '@tailwindcss/vite'
+import { getAllowedDevHosts } from './viteAllowedHost.js'
 
 const isLanMode = process.env.CINELODE_DEV_LAN === 'true'
 const isHttps = process.env.CINELODE_DEV_TLS_ENABLED === 'true'
@@ -44,6 +45,7 @@ export default defineConfig({
   },
   server: {
     ...serverOptions,
+    allowedHosts: getAllowedDevHosts(process.env.CINELODE_DEV_ALLOWED_HOST),
     strictPort: true,
     proxy: {
       '/api': {

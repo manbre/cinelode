@@ -76,6 +76,18 @@ class FfmpegPlaybackServiceTest {
     }
 
     @Test
+    void widePreviewsCropToThePlayerAspectBeforeEncoding() throws Exception {
+        var response = playbackService.play(movie, null, null, true, true, 0);
+
+        response.getBody().writeTo(new ByteArrayOutputStream());
+
+        assertTrue(command.stream().anyMatch(value ->
+                value.contains("crop='min(iw,ih*2.07)':'min(ih,iw/2.07)'")));
+        assertTrue(command.stream().anyMatch(value -> value.contains("scale=1280:618")));
+        assertTrue(command.stream().anyMatch(value -> value.contains("setsar=1")));
+    }
+
+    @Test
     void previewsStayEntirelyWithinTheMiddleSixtyPercent() throws Exception {
         for (double duration : List.of(7200.0, 1200.0, 60.0, 30.0, 2.0)) {
             when(ffprobe.inspectDuration(mediaFile)).thenReturn(duration);

@@ -85,6 +85,9 @@ describe('App', () => {
   it('shows loading and handles page load, back navigation and cleanup', () => {
     const screen = render(<App />);
     const webview = screen.getByTestId('cinelode-webview');
+    expect(webview.props.source.uri).toMatch(
+      /^https:\/\/cinelode\.example:5173\?cinelodeLaunch=\d+$/,
+    );
     expect(screen.getByText('Cinelode wird geladen ...')).toBeTruthy();
     const back = mockAddBackListener.mock.calls[0][1] as () => boolean;
     expect(back()).toBe(true);

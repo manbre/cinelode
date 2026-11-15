@@ -1,4 +1,3 @@
-
 import { useCallback, useEffect, useRef, useState } from 'react'
 import CatalogPanel from '../components/CatalogPanel'
 import MovieDetails from '../components/MovieDetails'
@@ -9,23 +8,23 @@ import { useTvNavigation } from '../hooks/useTvNavigation'
 import { useCinelodeStore } from '../store'
 import { contentKey, getNextPlaybackSelection, isMovie } from '../utils/catalog'
 import { openExternalMovie } from '../utils/externalPlayback'
-
 const MOVIES_API = '/api/movies'
-
 function notifyNativeHistory(canGoBack) {
-  window.ReactNativeWebView?.postMessage(JSON.stringify({
-    type: 'cinelode-history',
-    canGoBack,
-  }))
+  window.ReactNativeWebView?.postMessage(
+    JSON.stringify({
+      type: 'cinelode-history',
+      canGoBack,
+    }),
+  )
 }
-
 function notifyNativePlayerState(isFullscreen) {
-  window.ReactNativeWebView?.postMessage(JSON.stringify({
-    type: 'cinelode-player-state',
-    isFullscreen,
-  }))
+  window.ReactNativeWebView?.postMessage(
+    JSON.stringify({
+      type: 'cinelode-player-state',
+      isFullscreen,
+    }),
+  )
 }
-
 // Coordinates catalog selection and playback state across the focused child components.
 function Home({ onLogout }) {
   const movies = useCinelodeStore((state) => state.movies)
@@ -44,22 +43,29 @@ function Home({ onLogout }) {
   const setIsSeriesMode = useCinelodeStore((state) => state.setIsSeriesMode)
   const setSelectedMovie = useCinelodeStore((state) => state.setSelectedMovie)
   const setSearch = useCinelodeStore((state) => state.setSearch)
-  const setSelectedDuration = useCinelodeStore((state) => state.setSelectedDuration)
+  const setSelectedDuration = useCinelodeStore(
+    (state) => state.setSelectedDuration,
+  )
   const setSelectedGenre = useCinelodeStore((state) => state.setSelectedGenre)
   const setSelectedPerson = useCinelodeStore((state) => state.setSelectedPerson)
   const setSelectedRated = useCinelodeStore((state) => state.setSelectedRated)
   const setLoading = useCinelodeStore((state) => state.setLoading)
   const setError = useCinelodeStore((state) => state.setError)
   const [logoutError, setLogoutError] = useState('')
-  const showExitConfirmation = useCinelodeStore((state) => state.showExitConfirmation)
-  const setShowExitConfirmation = useCinelodeStore((state) => state.setShowExitConfirmation)
+  const showExitConfirmation = useCinelodeStore(
+    (state) => state.showExitConfirmation,
+  )
+  const setShowExitConfirmation = useCinelodeStore(
+    (state) => state.setShowExitConfirmation,
+  )
   const playlist = useCinelodeStore((state) => state.playlist)
-  const togglePlaylistItem = useCinelodeStore((state) => state.togglePlaylistItem)
+  const togglePlaylistItem = useCinelodeStore(
+    (state) => state.togglePlaylistItem,
+  )
   const clearPlaylist = useCinelodeStore((state) => state.clearPlaylist)
   const exitCancelRef = useRef(null)
   const playerControlsRef = useRef(null)
   const selectionActivatedRef = useRef(false)
-
   const {
     audioTracks,
     changePlaybackTrack,
@@ -96,17 +102,14 @@ function Home({ onLogout }) {
     videoRef,
     volume,
   } = usePlayback({ selectedMovie, setError })
-
   const playlistPositions = new Map(
-    playlist.map((movie, index) => [contentKey(movie), index + 1])
+    playlist.map((movie, index) => [contentKey(movie), index + 1]),
   )
-
   const handleBack = useCallback(() => {
     if (showExitConfirmation) {
       setShowExitConfirmation(false)
       return
     }
-
     if (isFullscreen || isFullPlayback) {
       if (isFullscreen) {
         document.exitFullscreen().catch(() => {
@@ -116,7 +119,6 @@ function Home({ onLogout }) {
       returnToPreview()
       return
     }
-
     if (selectedMovie) {
       clearSelection()
       setSelectedMovie(null)
@@ -125,12 +127,10 @@ function Home({ onLogout }) {
       }
       return
     }
-
     if (isSeriesMode) {
       setIsSeriesMode(false)
       return
     }
-
     setShowExitConfirmation(true)
   }, [
     clearSelection,
@@ -145,7 +145,6 @@ function Home({ onLogout }) {
     setShowExitConfirmation,
     showExitConfirmation,
   ])
-
   const handlePlayPause = useCallback(() => {
     const video = videoRef.current
     if (!video) {
@@ -159,99 +158,89 @@ function Home({ onLogout }) {
       video.pause()
     }
   }, [setError, videoRef])
-
-  const handleSeek = useCallback((offset) => {
-    if (!isFullPlayback || !videoRef.current) {
-      return
-    }
-    showPlayerControls()
-    const nextPosition = Math.min(
-      Math.max(playbackPositionRef.current + offset, 0),
-      duration || Number.MAX_SAFE_INTEGER,
-    )
-    seekPlayback(nextPosition)
-  }, [
-    duration,
-    isFullPlayback,
-    playbackPositionRef,
-    seekPlayback,
-    showPlayerControls,
-    videoRef,
-  ])
-
-  const handleDirection = useCallback((direction) => {
-    if (!isFullPlayback || !isFullscreen) {
-      return false
-    }
-
-    const active = document.activeElement
-    if (active instanceof HTMLElement && active.closest('[role="listbox"]')) {
-      return false
-    }
-
-    if (!controlsVisible) {
+  const handleSeek = useCallback(
+    (offset) => {
+      if (!isFullPlayback || !videoRef.current) {
+        return
+      }
       showPlayerControls()
-      window.requestAnimationFrame(() => {
-        playerControlsRef.current
-          ?.querySelector('button, input')
-          ?.focus()
-      })
+      const nextPosition = Math.min(
+        Math.max(playbackPositionRef.current + offset, 0),
+        duration || Number.MAX_SAFE_INTEGER,
+      )
+      seekPlayback(nextPosition)
+    },
+    [
+      duration,
+      isFullPlayback,
+      playbackPositionRef,
+      seekPlayback,
+      showPlayerControls,
+      videoRef,
+    ],
+  )
+  const handleDirection = useCallback(
+    (direction) => {
+      if (!isFullPlayback || !isFullscreen) {
+        return false
+      }
+      const active = document.activeElement
+      if (active instanceof HTMLElement && active.closest('[role="listbox"]')) {
+        return false
+      }
+      if (!controlsVisible) {
+        showPlayerControls()
+        window.requestAnimationFrame(() => {
+          playerControlsRef.current?.querySelector('button, input')?.focus()
+        })
+        return true
+      }
+      if (direction !== 'left' && direction !== 'right') {
+        return false
+      }
+      const controls = [
+        ...(playerControlsRef.current?.querySelectorAll(
+          'button:not([disabled]):not([tabindex="-1"]), input:not([disabled]):not([tabindex="-1"])',
+        ) ?? []),
+      ]
+      const currentIndex = controls.indexOf(active)
+      if (currentIndex < 0) {
+        return false
+      }
+      const nextIndex =
+        direction === 'right' ? currentIndex + 1 : currentIndex - 1
+      const next = controls[nextIndex]
+      if (!(next instanceof HTMLElement)) {
+        return false
+      }
+      next.focus()
+      next.scrollIntoView({ block: 'nearest', inline: 'nearest' })
       return true
-    }
-
-    if (direction !== 'left' && direction !== 'right') {
-      return false
-    }
-
-    const controls = [...(playerControlsRef.current?.querySelectorAll(
-      'button:not([disabled]):not([tabindex="-1"]), input:not([disabled]):not([tabindex="-1"])'
-    ) ?? [])]
-    const currentIndex = controls.indexOf(active)
-    if (currentIndex < 0) {
-      return false
-    }
-    const nextIndex = direction === 'right' ? currentIndex + 1 : currentIndex - 1
-    const next = controls[nextIndex]
-    if (!(next instanceof HTMLElement)) {
-      return false
-    }
-    next.focus()
-    next.scrollIntoView({ block: 'nearest', inline: 'nearest' })
-    return true
-  }, [
-    controlsVisible,
-    isFullPlayback,
-    isFullscreen,
-    showPlayerControls,
-  ])
-
-  const {restoreFocus} = useTvNavigation({
+    },
+    [controlsVisible, isFullPlayback, isFullscreen, showPlayerControls],
+  )
+  const { restoreFocus } = useTvNavigation({
     onBack: handleBack,
     onDirection: handleDirection,
     onPlayPause: handlePlayPause,
     onSeek: handleSeek,
   })
-
   useEffect(() => {
     if (showExitConfirmation) {
       window.requestAnimationFrame(() => exitCancelRef.current?.focus())
     }
   }, [showExitConfirmation])
-
   useEffect(() => {
     if (!selectedMovie) {
       window.requestAnimationFrame(restoreFocus)
     }
   }, [restoreFocus, selectedMovie])
-
   useEffect(() => {
     notifyNativeHistory(Boolean(window.history.state?.cinelodeView))
   }, [])
-
   useEffect(() => {
     notifyNativePlayerState(isFullPlayback)
   }, [isFullPlayback])
-
   useEffect(() => {
     const handleHistoryBack = () => {
       notifyNativeHistory(Boolean(window.history.state?.cinelodeView))
@@ -280,34 +269,31 @@ function Home({ onLogout }) {
     setError,
     setSelectedMovie,
   ])
-
   useEffect(() => {
     const controller = new AbortController()
-
     async function loadCatalogs() {
       try {
         const [moviesResponse, seriesResponse] = await Promise.all([
           fetch(MOVIES_API, { signal: controller.signal }),
           fetch('/api/series', { signal: controller.signal }),
         ])
-
         if (!moviesResponse.ok) {
           throw new Error('Movie library could not be loaded.')
         }
         if (!seriesResponse.ok) {
           throw new Error('Series library could not be loaded.')
         }
-
         const [movieData, seriesData] = await Promise.all([
           moviesResponse.json(),
           seriesResponse.json(),
         ])
         const loadedMovies = Array.isArray(movieData) ? movieData : []
         setMovies(loadedMovies)
-        setSeriesSeasons(Array.isArray(seriesData)
-          ? seriesData.map((season) => ({ ...season, source: 'SERIES' }))
-          : [])
-
+        setSeriesSeasons(
+          Array.isArray(seriesData)
+            ? seriesData.map((season) => ({ ...season, source: 'SERIES' }))
+            : [],
+        )
         const firstLocalMovie = loadedMovies.find(isMovie)
         if (firstLocalMovie) {
           selectContent(firstLocalMovie)
@@ -323,14 +309,18 @@ function Home({ onLogout }) {
         }
       }
     }
-
     loadCatalogs()
-
     return () => {
       controller.abort()
     }
-  }, [selectContent, setError, setLoading, setMovies, setSelectedMovie, setSeriesSeasons])
-
+  }, [
+    selectContent,
+    setError,
+    setLoading,
+    setMovies,
+    setSelectedMovie,
+    setSeriesSeasons,
+  ])
   const {
     localMovies,
     availableGenres,
@@ -347,68 +337,89 @@ function Home({ onLogout }) {
     selectedPerson,
     selectedRated,
   })
-
-  const openMovie = useCallback((movie) => {
-    if (selectedMovieRef.current?.id === movie.id
-        && selectedMovieRef.current?.source === movie.source) {
-      if (movie.source !== 'EXTERNAL') {
-        resumePreview()
+  const openMovie = useCallback(
+    (movie) => {
+      if (
+        selectedMovieRef.current?.id === movie.id &&
+        selectedMovieRef.current?.source === movie.source
+      ) {
+        if (movie.source !== 'EXTERNAL') {
+          resumePreview()
+        }
+        return
       }
-      return
-    }
-    selectContent(movie)
-    setSelectedMovie(movie)
-    selectionActivatedRef.current = true
-    window.history.pushState({cinelodeView: 'movie'}, '', window.location.href)
-    notifyNativeHistory(true)
-  }, [resumePreview, selectContent, selectedMovieRef, setSelectedMovie])
-
-  const openSeason = useCallback((season) => {
-    const firstEpisode = season.episodes.find((episode) => episode.episodeNumber === 1)
-      ?? season.episodes[0]
-    if (!firstEpisode) {
-      setError(`No episodes found for season ${season.seasonNumber}.`)
-      return
-    }
-
-    if (selectedMovieRef.current?.source === 'SERIES'
-        && selectedMovieRef.current.id === season.id) {
-      resumePreview()
-      return
-    }
-
-    const selection = {
-      ...season,
-      source: 'SERIES',
-      episodeId: firstEpisode.id,
-      episodeNumber: firstEpisode.episodeNumber,
-    }
-    selectContent(selection)
-    setSelectedMovie(selection)
-    selectionActivatedRef.current = true
-    window.history.pushState({cinelodeView: 'season'}, '', window.location.href)
-    notifyNativeHistory(true)
-  }, [resumePreview, selectContent, selectedMovieRef, setError, setSelectedMovie])
-
-  const handleCatalogSelection = useCallback((movie) => {
-    const isSelected = selectedMovie
-      && contentKey(selectedMovie) === contentKey(movie)
-    if (!isSelected) {
-      if (movie.source === 'SERIES') {
-        openSeason(movie)
-      } else {
-        openMovie(movie)
-      }
-      return
-    }
-
-    if (!selectionActivatedRef.current) {
+      selectContent(movie)
+      setSelectedMovie(movie)
       selectionActivatedRef.current = true
-      return
-    }
-    togglePlaylistItem(selectedMovie)
-  }, [openMovie, openSeason, selectedMovie, togglePlaylistItem])
-
+      window.history.pushState(
+        { cinelodeView: 'movie' },
+        '',
+        window.location.href,
+      )
+      notifyNativeHistory(true)
+    },
+    [resumePreview, selectContent, selectedMovieRef, setSelectedMovie],
+  )
+  const openSeason = useCallback(
+    (season) => {
+      const firstEpisode =
+        season.episodes.find((episode) => episode.episodeNumber === 1) ??
+        season.episodes[0]
+      if (!firstEpisode) {
+        setError(`No episodes found for season ${season.seasonNumber}.`)
+        return
+      }
+      if (
+        selectedMovieRef.current?.source === 'SERIES' &&
+        selectedMovieRef.current.id === season.id
+      ) {
+        resumePreview()
+        return
+      }
+      const selection = {
+        ...season,
+        source: 'SERIES',
+        episodeId: firstEpisode.id,
+        episodeNumber: firstEpisode.episodeNumber,
+      }
+      selectContent(selection)
+      setSelectedMovie(selection)
+      selectionActivatedRef.current = true
+      window.history.pushState(
+        { cinelodeView: 'season' },
+        '',
+        window.location.href,
+      )
+      notifyNativeHistory(true)
+    },
+    [
+      resumePreview,
+      selectContent,
+      selectedMovieRef,
+      setError,
+      setSelectedMovie,
+    ],
+  )
+  const handleCatalogSelection = useCallback(
+    (movie) => {
+      const isSelected =
+        selectedMovie && contentKey(selectedMovie) === contentKey(movie)
+      if (!isSelected) {
+        if (movie.source === 'SERIES') {
+          openSeason(movie)
+        } else {
+          openMovie(movie)
+        }
+        return
+      }
+      if (!selectionActivatedRef.current) {
+        selectionActivatedRef.current = true
+        return
+      }
+      togglePlaylistItem(selectedMovie)
+    },
+    [openMovie, openSeason, selectedMovie, togglePlaylistItem],
+  )
   const handleStartPlayback = useCallback(() => {
     if (selectedMovie?.source !== 'EXTERNAL') {
       startPlayback()
@@ -425,15 +436,20 @@ function Home({ onLogout }) {
         return popup
       },
       nativeBridge: window.ReactNativeWebView,
-    }).catch((cause) => setError(cause.message || 'The external movie could not be opened.'))
+    }).catch((cause) =>
+      setError(cause.message || 'The external movie could not be opened.'),
+    )
   }, [selectedMovie, setError, startPlayback])
-
   useEffect(() => {
-    const onExternalOpenError = () => setError('The external link could not be opened on this device.')
+    const onExternalOpenError = () =>
+      setError('The external link could not be opened on this device.')
     window.addEventListener('cinelode-external-open-error', onExternalOpenError)
-    return () => window.removeEventListener('cinelode-external-open-error', onExternalOpenError)
+    return () =>
+      window.removeEventListener(
+        'cinelode-external-open-error',
+        onExternalOpenError,
+      )
   }, [setError])
-
   const handlePlaybackEnded = useCallback(() => {
     if (!isFullPlayback || !selectedMovie) {
       return
@@ -456,7 +472,9 @@ function Home({ onLogout }) {
     if (nextMovie.source !== 'EXTERNAL') {
       setIsFullPlayback(true)
     } else if (document.fullscreenElement) {
-      document.exitFullscreen().catch(() => setError('Could not exit fullscreen.'))
+      document
+        .exitFullscreen()
+        .catch(() => setError('Could not exit fullscreen.'))
     }
   }, [
     isFullPlayback,
@@ -471,21 +489,25 @@ function Home({ onLogout }) {
     setSelectedMovie,
     setError,
   ])
-
-  const openEpisode = useCallback((episode) => {
-    if (!selectedMovie || selectedMovie.source !== 'SERIES'
-        || selectedMovie.episodeId === episode.id) {
-      return
-    }
-    const selection = {
-      ...selectedMovie,
-      episodeId: episode.id,
-      episodeNumber: episode.episodeNumber,
-    }
-    selectContent(selection)
-    setSelectedMovie(selection)
-  }, [selectContent, selectedMovie, setSelectedMovie])
-
+  const openEpisode = useCallback(
+    (episode) => {
+      if (
+        !selectedMovie ||
+        selectedMovie.source !== 'SERIES' ||
+        selectedMovie.episodeId === episode.id
+      ) {
+        return
+      }
+      const selection = {
+        ...selectedMovie,
+        episodeId: episode.id,
+        episodeNumber: episode.episodeNumber,
+      }
+      selectContent(selection)
+      setSelectedMovie(selection)
+    },
+    [selectContent, selectedMovie, setSelectedMovie],
+  )
   const changeCatalogMode = (showSeries) => {
     setIsSeriesMode(showSeries)
     setSearch('')
@@ -505,7 +527,6 @@ function Home({ onLogout }) {
       setSelectedMovie(null)
     }
   }
-
   const handleLogout = async () => {
     setLogoutError('')
     try {
@@ -514,9 +535,8 @@ function Home({ onLogout }) {
       setLogoutError(cause.message || 'Abmeldung fehlgeschlagen.')
     }
   }
-
   return (
-    <main className="layout-frame relative isolate flex h-dvh flex-col overflow-hidden bg-[#101011]/55 text-text-primary lg:grid">
+    <main className="layout-frame relative isolate flex h-dvh min-h-0 flex-col overflow-hidden bg-[#101011]/55 text-text-primary lg:grid lg:grid-rows-[minmax(0,1fr)]">
       {selectedMovie?.posterUrl && (
         <>
           <img
@@ -553,12 +573,24 @@ function Home({ onLogout }) {
         openSeason={handleCatalogSelection}
       />
       {logoutError && (
-        <p role="alert" className="fixed bottom-4 right-4 z-50 rounded-lg bg-red-950 px-4 py-3 text-sm text-red-200">
+        <p
+          role="alert"
+          className="fixed bottom-4 right-4 z-50 rounded-lg bg-red-950 px-4 py-3 text-sm text-red-200"
+        >
           {logoutError}
         </p>
       )}
-
-      <aside className={`hide-scrollbar relative z-10 min-h-0 overflow-y-auto bg-[#111112]/50 ${selectedMovie ? 'order-1 block h-[42dvh] shrink-0 lg:order-2 lg:h-auto lg:shrink' : 'hidden lg:block'}`}>
+      <aside
+        className={`hide-scrollbar relative z-10 min-h-0 min-w-0 bg-[#111112]/50 ${
+          selectedMovie
+            ? `order-1 block h-[42dvh] shrink-0 overflow-y-auto lg:order-2 lg:h-full lg:min-h-0 lg:shrink-0 ${
+                !isFullPlayback
+                  ? 'details-panel'
+                  : 'lg:overflow-y-auto'
+              }`
+            : 'hidden lg:block'
+        }`}
+      >
         {selectedMovie ? (
           <>
             <VideoPlayer
@@ -595,20 +627,20 @@ function Home({ onLogout }) {
               playbackPositionRef={playbackPositionRef}
               onPlaybackEnded={handlePlaybackEnded}
             />
-
-            <MovieDetails
-              selectedMovie={selectedMovie}
-              openEpisode={openEpisode}
-              personMovieCounts={personMovieCounts}
-              selectedPerson={selectedPerson}
-              setSelectedPerson={setSelectedPerson}
-              setSelectedGenre={setSelectedGenre}
-              selectedRated={selectedRated}
-              setSelectedRated={setSelectedRated}
-              ratedMovieCounts={ratedMovieCounts}
-              onStartPlayback={handleStartPlayback}
-            />
-
+            <div className="movie-info min-h-0 lg:overflow-y-auto">
+              <MovieDetails
+                selectedMovie={selectedMovie}
+                openEpisode={openEpisode}
+                personMovieCounts={personMovieCounts}
+                selectedPerson={selectedPerson}
+                setSelectedPerson={setSelectedPerson}
+                setSelectedGenre={setSelectedGenre}
+                selectedRated={selectedRated}
+                setSelectedRated={setSelectedRated}
+                ratedMovieCounts={ratedMovieCounts}
+                onStartPlayback={handleStartPlayback}
+              />
+            </div>
           </>
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-3 p-8 text-center text-white/35">
@@ -646,9 +678,11 @@ function Home({ onLogout }) {
               <button
                 type="button"
                 onClick={() => {
-                  window.ReactNativeWebView?.postMessage(JSON.stringify({
-                    type: 'cinelode-exit-confirmed',
-                  }))
+                  window.ReactNativeWebView?.postMessage(
+                    JSON.stringify({
+                      type: 'cinelode-exit-confirmed',
+                    }),
+                  )
                 }}
                 className="min-h-12 rounded-lg bg-accent px-6 py-3 font-semibold text-black"
               >
@@ -661,5 +695,4 @@ function Home({ onLogout }) {
     </main>
   )
 }
-
 export default Home

@@ -152,6 +152,7 @@ public class MovieMediaController {
             @RequestParam(required = false) Integer audioTrack,
             @RequestParam(required = false) Integer subtitleTrack,
             @RequestParam(defaultValue = "false") boolean preview,
+            @RequestParam(defaultValue = "false") boolean wide,
             @RequestParam(defaultValue = "0") double start) {
 
         Optional<Movie> result = getMovie.execute(id);
@@ -165,6 +166,7 @@ public class MovieMediaController {
                 audioTrack,
                 subtitleTrack,
                 preview,
+                wide,
                 start
         );
     }

@@ -33,6 +33,7 @@ export function buildPlaybackUrl(selectedMovie, {
   selectedSubtitleTrack,
   playbackStart,
   previewIteration,
+  widePreview = false,
 }) {
   if (!selectedMovie || selectedMovie.source === 'EXTERNAL') {
     return ''
@@ -52,6 +53,9 @@ export function buildPlaybackUrl(selectedMovie, {
   } else {
     params.set('preview', 'true')
     params.set('cycle', String(previewIteration))
+    if (widePreview) {
+      params.set('wide', 'true')
+    }
   }
   const query = params.toString()
   return `${getPlaybackBase(selectedMovie)}/play${query ? `?${query}` : ''}`

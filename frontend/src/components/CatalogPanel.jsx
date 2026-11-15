@@ -65,7 +65,7 @@ function CatalogPanel({
   openSeason,
 }) {
   return (
-    <section className="hide-scrollbar relative z-10 order-2 min-h-0 flex-1 overflow-y-auto bg-[#151516]/55 px-5 pb-5 pt-0 sm:px-7 lg:order-1 lg:px-8 lg:pl-5 lg:pr-5">
+    <section className="hide-scrollbar relative z-10 order-2 min-h-0 flex-1 overflow-y-auto bg-[#151516]/55 px-5 pb-5 pt-0 sm:px-7 lg:order-1 lg:px-8 lg:pl-3 lg:pr-3">
       <div className="sticky top-0 z-20 -mx-5 mb-3 bg-[#151516]/75 px-5 pb-4 pt-5 backdrop-blur-md sm:-mx-7 sm:px-7 lg:-mx-8 lg:px-8">
         <div className="mb-[10.667px] flex justify-center">
           <div className="flex w-full max-w-3xl items-center gap-2">
@@ -80,7 +80,7 @@ function CatalogPanel({
               type="button"
               aria-pressed={Boolean(selectedDuration)}
               onClick={() => setSelectedDuration(selectedDuration ? '' : true)}
-              className={`h-[2.125rem] shrink-0 rounded-full border px-3 py-2 text-[0.6875rem] font-medium transition sm:px-3.5 sm:text-xs ${
+              className={`h-[2.125rem] shrink-0 rounded-full border px-3 py-2 text-[0.721875rem] font-medium transition sm:px-3.5 sm:text-xs ${
                 selectedDuration
                   ? 'border-accent bg-accent text-black'
                   : 'border-white/10 bg-white/[0.03] text-white/60 hover:bg-white/10 hover:text-white'

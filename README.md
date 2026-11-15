@@ -107,12 +107,28 @@ server's private address using LAN DNS. This does not require opening an
 inbound port on the router. Do not assume a privately installed CA is trusted
 on every Fire TV model. Certificate Transparency may disclose the hostname.
 
-Set `CINELODE_DEV_TLS_CERT` and `CINELODE_DEV_TLS_KEY` to the certificate and
-private-key file paths, then run:
+Keep the server certificate (or certificate chain) and its matching private
+key outside the repository or in the ignored `certs/` directory. Keep the
+private key readable only by its owner and never share or commit it. From the
+project root, set the actual certificate paths in the shell that starts Cinelode:
 
 ```sh
+export CINELODE_DEV_TLS_CERT="/path/to/fullchain.pem"
+export CINELODE_DEV_TLS_KEY="/path/to/privkey.pem"
+export CINELODE_DEV_ALLOWED_HOST="your-hostname.example"
 npm run dev:lan
 ```
+
+Set `CINELODE_DEV_ALLOWED_HOST` to the exact DNS hostname used to access the
+development server. Vite needs it to accept the live-reload WebSocket; leave it
+unset when using localhost or an IP address. Do not use a wildcard.
+
+Open `https://<certificate-hostname-or-ip>:5173` on a trusted LAN client, using
+the exact hostname or IP address listed in the certificate's subject alternative
+names. For a certificate issued by a local CA such as mkcert, each client must
+trust that CA independently; trust on the server does not establish trust on a
+Fire TV. Verify that the device supports the required trust configuration. Never
+copy the CA's private key to clients.
 
 This mode exposes the Vite HTTPS frontend on LAN interfaces, keeps the Spring
 API on loopback, and marks the session and CSRF cookies `Secure`. Configure the

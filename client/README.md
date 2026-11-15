@@ -36,8 +36,10 @@ Follow the [root development instructions](../README.md#development) to set
 up credentials and media paths. LAN mode is started with `npm run dev:lan`.
 Set `CINELODE_DEV_TLS_CERT` to the certificate chain file and
 `CINELODE_DEV_TLS_KEY` to the corresponding private key file in the process
-environment first. Protect the private key. No such certificate or key was
-configured in the inspection session.
+environment first. Protect the private key and do not commit it; the root
+`certs/` directory is ignored by Git.
+See the [LAN instructions](../README.md#lan-and-fire-tv-development) for an
+example configuration.
 
 Choose a hostname resolving to the server's LAN address from the Fire TV.
 Inspect the configured certificate's subject alternative names with
@@ -267,6 +269,9 @@ Preview playback advances after 25 seconds. The client fades the current clip
 out for 350 ms, starts the next clip, and fades it in for 350 ms. The
 backend preview endpoint remains unchanged; the client-side cutoff avoids a
 second preview implementation while preserving the existing HMR/LAN setup.
+On large screens, Vega and browser previews share the same player and metadata
+layout. The Vega video rendering remains device-specific; fullscreen playback
+and external posters are unchanged.
 The WebView receives ordinary DOM keyboard events and one native Back bridge.
 Browser history, spatial focus geometry, keyboard input, media-key delivery,
 and WebView video behavior must still be checked on the target Fire TV;

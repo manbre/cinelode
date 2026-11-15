@@ -1,48 +1,35 @@
-import {
-  Captions,
-  Maximize,
-  Pause,
-  Play,
-  Volume2,
-  X,
-} from 'lucide-react'
-import { useRef, useState } from 'react'
+import { Captions, Maximize, Pause, Play, Volume2, X } from 'lucide-react'
+import { useEffect, useRef, useState } from 'react'
 import { formatTime, trackLabel } from '../utils/playback'
-
-function TrackMenu({
-  label,
-  icon,
-  value,
-  options,
-  onChange,
-}) {
+import { isNativeWebView } from '../utils/runtime'
+function TrackMenu({ label, icon, value, options, onChange }) {
   const [open, setOpen] = useState(false)
   const triggerRef = useRef(null)
-
-  const selectedOption = options.find((option) => option.value === String(value))
-    ?? options[0]
-
+  const selectedOption =
+    options.find((option) => option.value === String(value)) ?? options[0]
   const close = () => {
     setOpen(false)
     window.requestAnimationFrame(() => triggerRef.current?.focus())
   }
-
   const openMenu = () => {
     setOpen(true)
     window.requestAnimationFrame(() => {
       const selected = document.querySelector(
-        `[data-track-menu="${label}"][data-track-value="${String(value)}"]`
+        `[data-track-menu="${label}"][data-track-value="${String(value)}"]`,
       )
       selected?.focus()
     })
   }
-
   return (
     <div
       className="relative flex items-center gap-2 text-xs"
       onKeyDown={(event) => {
-        if ((event.key === 'Escape' || event.key === 'BrowserBack' || event.key === 'GoBack')
-            && open) {
+        if (
+          (event.key === 'Escape' ||
+            event.key === 'BrowserBack' ||
+            event.key === 'GoBack') &&
+          open
+        ) {
           event.preventDefault()
           event.stopPropagation()
           close()
@@ -94,7 +81,6 @@ function TrackMenu({
     </div>
   )
 }
-
 // Renders the video element and its playback controls; playback state is supplied by Home.
 function VideoPlayer({
   videoRef,
@@ -130,15 +116,51 @@ function VideoPlayer({
   playbackPositionRef,
   onPlaybackEnded,
 }) {
+  const useVegaPreview =
+    !isFullPlayback && selectedMovie.source !== 'EXTERNAL' && isNativeWebView()
+  useEffect(() => {
+    const player = playerContainerRef.current
+    const panel = player?.parentElement
+    if (
+      isFullPlayback ||
+      selectedMovie.source === 'EXTERNAL' ||
+      !player ||
+      !panel
+    ) {
+      return
+    }
+
+    const observer = new ResizeObserver(([entry]) => {
+      panel.style.setProperty(
+        '--browser-preview-height',
+        `${entry.contentRect.height}px`,
+      )
+    })
+    observer.observe(player)
+    return () => {
+      observer.disconnect()
+      panel.style.removeProperty('--browser-preview-height')
+    }
+  }, [isFullPlayback, selectedMovie.source, playerContainerRef])
   return (
     <div
       ref={playerContainerRef}
       onMouseMove={showPlayerControls}
       onTouchStart={showPlayerControls}
       onFocusCapture={showPlayerControls}
-      className={`relative aspect-video min-h-[17.5rem] overflow-hidden bg-black sm:min-h-[21.25rem] lg:min-h-0 ${
+      className={`relative overflow-hidden bg-black lg:min-h-0 ${
+        useVegaPreview
+          ? '-top-2 aspect-video min-h-0 lg:top-0'
+          : 'aspect-video min-h-[17.5rem] sm:min-h-[21.25rem]'
+      } ${
         !isFullPlayback
-          ? '[clip-path:inset(0)] lg:aspect-auto lg:h-[min(52dvh,27.5vw)]'
+          ? useVegaPreview
+            ? 'preview-layout-player lg:aspect-auto lg:h-full lg:min-h-0 lg:[transform:translateY(-10%)]'
+            : `[clip-path:inset(0)] lg:aspect-auto lg:h-full lg:min-h-0 ${
+                selectedMovie.source !== 'EXTERNAL'
+                  ? 'preview-layout-player [transform:translateY(-10%)]'
+                  : ''
+              }`
           : ''
       } [&:fullscreen]:aspect-auto [&:fullscreen]:h-screen [&:fullscreen]:w-screen [&:fullscreen]:min-h-0 ${
         isFullscreen && !controlsVisible ? 'cursor-none' : ''
@@ -153,64 +175,68 @@ function VideoPlayer({
               className="absolute inset-0 size-full object-contain"
             />
           )
-        ) : <video
-          key={playbackUrl}
-          ref={videoRef}
-          src={playbackUrl}
-          autoPlay
-          playsInline
-          preload="metadata"
-          onCanPlay={() => {
-            const video = videoRef.current
-            if (!video) {
-              return
-            }
-            video.play().catch(() => {
-              setError('The browser blocked automatic playback with audio.')
-            })
-          }}
-          onLoadedMetadata={(event) => {
-            const mediaDuration = event.currentTarget.duration
-            if (Number.isFinite(mediaDuration) && mediaDuration > 0) {
-              setDuration((currentDuration) => Math.max(
-                currentDuration,
-                playbackStart + mediaDuration
-              ))
-            }
-          }}
-          onTimeUpdate={(event) => {
-            const position = playbackStart + event.currentTarget.currentTime
-            playbackPositionRef.current = position
-            setCurrentTime(position)
-            if (!isPlaybackStream && event.currentTarget.currentTime >= 25) {
-              advancePreview()
-            }
-          }}
-          onPlay={() => {
-            setIsPlaying(true)
-          }}
-          onPause={() => setIsPlaying(false)}
-          onEnded={() => {
-            if (isPlaybackStream) {
-              onPlaybackEnded?.()
-              return
-            }
-            if (!isFullPlayback
-                && selectedMovieRef.current?.id === selectedMovie.id
-                && (selectedMovie.source !== 'SERIES'
-                  || selectedMovieRef.current?.episodeId === selectedMovie.episodeId)) {
-              advancePreview()
-            }
-          }}
-          onError={() => {
-            setError('Playback failed. Check FFmpeg output and the browser console.')
-          }}
-          className={`absolute object-cover transition-opacity duration-[350ms] ${
-            !isFullPlayback ? 'preview-video' : 'inset-0 size-full'
-          } ${
-            previewTransition === 'fading' ? 'opacity-0' : 'opacity-100'
-          }`}
-        />}
+        ) : (
+          <video
+              key={playbackUrl}
+              ref={videoRef}
+              src={playbackUrl}
+              autoPlay
+              playsInline
+              preload="metadata"
+              onCanPlay={() => {
+                const video = videoRef.current
+                if (!video) {
+                  return
+                }
+                video.play().catch(() => {
+                  setError('The browser blocked automatic playback with audio.')
+                })
+              }}
+              onLoadedMetadata={(event) => {
+                const mediaDuration = event.currentTarget.duration
+                if (Number.isFinite(mediaDuration) && mediaDuration > 0) {
+                  setDuration((currentDuration) =>
+                    Math.max(currentDuration, playbackStart + mediaDuration),
+                  )
+                }
+              }}
+              onTimeUpdate={(event) => {
+                const position = playbackStart + event.currentTarget.currentTime
+                playbackPositionRef.current = position
+                setCurrentTime(position)
+                if (!isPlaybackStream && event.currentTarget.currentTime >= 25) {
+                  advancePreview()
+                }
+              }}
+              onPlay={() => {
+                setIsPlaying(true)
+              }}
+              onPause={() => setIsPlaying(false)}
+              onEnded={() => {
+                if (isPlaybackStream) {
+                  onPlaybackEnded?.()
+                  return
+                }
+                if (
+                  !isFullPlayback &&
+                  selectedMovieRef.current?.id === selectedMovie.id &&
+                  (selectedMovie.source !== 'SERIES' ||
+                    selectedMovieRef.current?.episodeId ===
+                      selectedMovie.episodeId)
+                ) {
+                  advancePreview()
+                }
+              }}
+              onError={() => {
+                setError(
+                  'Playback failed. Check FFmpeg output and the browser console.',
+                )
+              }}
+            className={`absolute object-cover transition-opacity duration-[350ms] ${
+              !isFullPlayback ? 'preview-video' : 'inset-0 size-full'
+            } ${previewTransition === 'fading' ? 'opacity-0' : 'opacity-100'}`}
+          />
+        )}
         {isFullPlayback && (
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#171719] via-black/10 to-black/20" />
         )}
@@ -250,7 +276,11 @@ function VideoPlayer({
                 }}
                 className="rounded-full p-2 transition hover:bg-white/15"
               >
-                {isPlaying ? <Pause size={22} /> : <Play size={22} fill="currentColor" />}
+                {isPlaying ? (
+                  <Pause size={22} />
+                ) : (
+                  <Play size={22} fill="currentColor" />
+                )}
               </button>
               <span className="min-w-[5.5rem] text-xs tabular-nums">
                 {formatTime(currentTime)} / {formatTime(duration)}
@@ -264,8 +294,12 @@ function VideoPlayer({
                 value={Math.min(currentTime, duration || currentTime)}
                 aria-label="Playback position"
                 onChange={(event) => setCurrentTime(Number(event.target.value))}
-                onPointerUp={(event) => seekPlayback(Number(event.currentTarget.value))}
-                onKeyUp={(event) => seekPlayback(Number(event.currentTarget.value))}
+                onPointerUp={(event) =>
+                  seekPlayback(Number(event.currentTarget.value))
+                }
+                onKeyUp={(event) =>
+                  seekPlayback(Number(event.currentTarget.value))
+                }
                 className="min-w-24 flex-1 accent-accent"
               />
               <label className="flex items-center gap-2" aria-label="Volume">
@@ -316,9 +350,11 @@ function VideoPlayer({
                       setError('Could not exit fullscreen.')
                     })
                   } else {
-                    playerContainerRef.current?.requestFullscreen().catch(() => {
-                      setError('Could not enter fullscreen.')
-                    })
+                    playerContainerRef.current
+                      ?.requestFullscreen()
+                      .catch(() => {
+                        setError('Could not enter fullscreen.')
+                      })
                   }
                 }}
                 className="rounded-full p-2 transition hover:bg-white/15"
@@ -331,7 +367,7 @@ function VideoPlayer({
       )}
       {!isFullscreen && (
         <div className="absolute inset-x-0 bottom-0 flex items-end justify-start gap-4 p-5 text-left sm:p-7">
-          <h2 className="min-w-0 text-[1.35rem] font-bold leading-tight drop-shadow sm:text-[1.6875rem]">
+          <h2 className="min-w-0 text-[1.4175rem] font-bold leading-tight drop-shadow sm:text-[1.771875rem]">
             {selectedMovie.source === 'SERIES'
               ? `${selectedMovie.title} · S${String(selectedMovie.seasonNumber).padStart(2, '0')} E${String(selectedMovie.episodeNumber).padStart(2, '0')}`
               : selectedMovie.title}
@@ -341,5 +377,4 @@ function VideoPlayer({
     </div>
   )
 }
-
 export default VideoPlayer

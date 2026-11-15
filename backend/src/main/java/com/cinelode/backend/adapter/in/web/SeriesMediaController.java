@@ -70,12 +70,13 @@ public class SeriesMediaController {
             @RequestParam(required = false) Integer audioTrack,
             @RequestParam(required = false) Integer subtitleTrack,
             @RequestParam(defaultValue = "false") boolean preview,
+            @RequestParam(defaultValue = "false") boolean wide,
             @RequestParam(defaultValue = "0") double start) {
         Optional<Path> mediaFile = resolveEpisode(id);
         if (mediaFile.isEmpty()) {
             return ResponseEntity.notFound().build();
         }
-        return ffmpegPlaybackService.play(mediaFile.get(), audioTrack, subtitleTrack, preview, start);
+        return ffmpegPlaybackService.play(mediaFile.get(), audioTrack, subtitleTrack, preview, wide, start);
     }
 
     private Optional<Path> resolveEpisode(long id) {

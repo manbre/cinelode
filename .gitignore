@@ -7,6 +7,9 @@ backend/target/
 /client/config.json
 /client/manifest.toml
 
+# Local TLS certificates and private keys
+/certs/
+
 # Local media libraries
 /media/
 /movies/

@@ -18,6 +18,9 @@ export const App = () => {
   const loadFailed = useRef(false);
   const hasLoadedOnce = useRef(false);
   const loadingOverlayTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const webViewUrl = useRef(
+    `${config.frontendUrl}?cinelodeLaunch=${Date.now()}`,
+  ).current;
   const validUrl = isValidFrontendUrl(config.frontendUrl);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
     validUrl ? 'loading' : 'error',
@@ -112,7 +115,7 @@ export const App = () => {
           allowsDefaultMediaControl
           mediaPlaybackRequiresUserAction={false}
           mixedContentMode="never"
-          source={{uri: config.frontendUrl}}
+          source={{uri: webViewUrl}}
           onLoadStart={({nativeEvent}) => {
             nativeCanGoBack.current = nativeEvent.canGoBack;
             webPlayerIsFullscreen.current = false;

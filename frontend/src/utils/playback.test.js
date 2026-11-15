@@ -15,6 +15,14 @@ test('builds a preview URL for movies', () => {
   ), '/api/movies/12/play?preview=true&cycle=2')
 })
 
+test('wide preview URLs request a device-safe aspect crop', () => {
+  assert.equal(buildPlaybackUrl({ source: 'LOCAL', id: 12 }, {
+    isFullPlayback: false,
+    previewIteration: 2,
+    widePreview: true,
+  }), '/api/movies/12/play?preview=true&cycle=2&wide=true')
+})
+
 test('builds full-playback URLs for series with selected tracks and seek position', () => {
   const episode = { source: 'SERIES', episodeId: 7 }
   assert.equal(getPlaybackBase(episode), '/api/series/episodes/7')
