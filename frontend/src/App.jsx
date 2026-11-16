@@ -110,7 +110,7 @@ function App() {
             console.warn('Cinelode: intro video could not be loaded')
             finishIntro()
           }}
-          className={`pointer-events-none fixed inset-0 z-[100] h-full w-full bg-black object-contain transition-opacity duration-500 ${
+          className={`pointer-events-none fixed inset-0 z-[100] h-full w-full bg-[#101011] object-contain transition-opacity duration-500 ${
             introFading ? 'opacity-0' : 'opacity-100'
           }`}
         />

@@ -1,0 +1,19 @@
+[Unit]
+Description=Cinelode backend for the LAN frontend
+
+[Service]
+Type=simple
+WorkingDirectory=%h/Dokumente/code/cinelode
+Environment=CINELODE_DEV_LOGIN=false
+Environment=CINELODE_REMEMBER_ME=true
+Environment=CINELODE_TLS_ENABLED=false
+Environment=CINELODE_SERVER_ADDRESS=127.0.0.1
+Environment=CINELODE_COOKIE_SECURE=true
+ExecStart=%h/Dokumente/code/cinelode/backend/mvnw -f %h/Dokumente/code/cinelode/backend/pom.xml spring-boot:run
+Restart=on-failure
+RestartSec=5
+KillMode=control-group
+TimeoutStopSec=30
+
+[Install]
+WantedBy=default.target

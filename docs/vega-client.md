@@ -13,12 +13,14 @@ playback are **not verified**. A Fire TV model must actually support the
 specified Vega runtime and WebView module; do not assume all Fire TVs do.
 
 Copy `config.example.json` to `config.json` and `manifest.example.toml` to
-`manifest.toml` before building. Both local files are ignored by Git.
-Set `frontendUrl` in `config.json` to your own LAN-accessible
-HTTPS origin, for example `https://cinelode.example:5173`, with a hostname
-that resolves to the development machine on the device. The example is not a
-real server. An IP address is also accepted if the certificate has that IP
-address as an IP SAN. Do not use loopback as the address of a remote server.
+`manifest.toml` before building. Both local files are ignored by Git. The
+manifest points to `assets/image/cinelode.png`, the 512 × 512 Vega app icon.
+Set `frontendUrl` in `config.json` to your LAN-accessible HTTPS origin. On this
+computer, the autostarted service is `https://cinelode.duckdns.org:5175`; the
+generic `npm run dev:lan` command uses port 5173. Use the actual origin serving
+your frontend, with a hostname that resolves to the development machine on the
+device. An IP address is also accepted if the certificate has that IP address
+as an IP SAN. Do not use loopback as the address of a remote server.
 The initial value is empty because no server address is configured here.
 
 The wrapper imports this JSON at bundle time; no URL environment variable is
@@ -36,8 +38,10 @@ Follow the [root development instructions](../README.md#development) to set
 up credentials and media paths. LAN mode is started with `npm run dev:lan`.
 Set `CINELODE_DEV_TLS_CERT` to the certificate chain file and
 `CINELODE_DEV_TLS_KEY` to the corresponding private key file in the process
-environment first. Protect the private key and do not commit it; the root
-`certs/` directory is ignored by Git.
+environment first. This computer's systemd frontend service already points to
+the ACME-managed certificate under `~/.local/share/cinelode-acme/`. Keep the
+private key in the certificate manager's storage; do not copy it into the
+repository or share it.
 See the [LAN instructions](../README.md#lan-and-fire-tv-development) for an
 example configuration.
 
@@ -316,8 +320,8 @@ or private keys in logs or reports.
    movie details and controls; check visible focus, scrolling, text entry and
    selection widgets.
 7. **Back:** test a selection control, player/fullscreen, catalog state, actual
-   page history and root. Record current behavior separately from the proposed
-   future behavior above, including whether the app exits unexpectedly.
+   page history and root. Record the observed behavior and any unexpected
+   results, including whether the app exits unexpectedly.
 8. **Catalog:** open movies and series, select seasons/episodes, check posters,
    previews and return to the catalog.
 9. **Playback:** start a movie and an episode, verify picture and sound,

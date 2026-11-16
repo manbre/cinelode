@@ -6,7 +6,14 @@ import {
 } from '@amazon-devices/react-native-kepler';
 import * as React from 'react';
 import {useEffect, useRef, useState} from 'react';
-import {BackHandler, Pressable, StyleSheet, Text, View} from 'react-native';
+import {
+  Animated,
+  BackHandler,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import config from '../config.json';
 import {isValidFrontendUrl} from './config';
 
@@ -25,6 +32,8 @@ export const App = () => {
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
     validUrl ? 'loading' : 'error',
   );
+  const loadingOverlayOpacity = useRef(new Animated.Value(1)).current;
+  const loadingOverlayFadeStarted = useRef(false);
   const [message, setMessage] = useState(
     validUrl ? '' : 'Eine gültige Frontend-URL muss konfiguriert werden.',
   );
@@ -67,10 +76,14 @@ export const App = () => {
     if (loadingOverlayTimer.current) {
       clearTimeout(loadingOverlayTimer.current);
     }
-  }, []);
+    loadingOverlayOpacity.stopAnimation();
+  }, [loadingOverlayOpacity]);
 
   const fail = (reason: string) => {
     loadFailed.current = true;
+    loadingOverlayOpacity.stopAnimation();
+    loadingOverlayOpacity.setValue(1);
+    loadingOverlayFadeStarted.current = false;
     console.error(`Cinelode: ${reason}`);
     setMessage(reason);
     setStatus('error');
@@ -101,6 +114,22 @@ export const App = () => {
     );
   };
 
+  const fadeLoadingOverlay = () => {
+    if (loadingOverlayFadeStarted.current) {
+      return;
+    }
+    loadingOverlayFadeStarted.current = true;
+    Animated.timing(loadingOverlayOpacity, {
+      toValue: 0,
+      duration: 450,
+      useNativeDriver: true,
+    }).start(({finished}) => {
+      if (finished) {
+        setStatus('ready');
+      }
+    });
+  };
+
   return (
     <View style={styles.container}>
       {validUrl && (
@@ -127,7 +156,7 @@ export const App = () => {
               loadingOverlayTimer.current = setTimeout(() => {
                 if (!loadFailed.current) {
                   hasLoadedOnce.current = true;
-                  setStatus('ready');
+                  fadeLoadingOverlay();
                 }
                 loadingOverlayTimer.current = null;
               }, 5000);
@@ -147,7 +176,7 @@ export const App = () => {
             }
             if (!loadFailed.current) {
               console.info('Cinelode: page loading completed');
-              setStatus('ready');
+              fadeLoadingOverlay();
             }
             hideSplashScreen();
           }}
@@ -225,7 +254,7 @@ export const App = () => {
         />
       )}
       {status !== 'ready' && (
-        <View style={styles.overlay}>
+        <Animated.View style={[styles.overlay, {opacity: loadingOverlayOpacity}]}>
           <Text style={styles.message}>
             {status === 'loading' ? 'Cinelode wird geladen ...' : message}
           </Text>
@@ -236,6 +265,9 @@ export const App = () => {
                 nativeCanGoBack.current = false;
                 webHistoryCanGoBack.current = false;
                 loadFailed.current = false;
+                loadingOverlayOpacity.stopAnimation();
+                loadingOverlayOpacity.setValue(1);
+                loadingOverlayFadeStarted.current = false;
                 setStatus('loading');
                 setAttempt(value => value + 1);
               }}
@@ -243,20 +275,20 @@ export const App = () => {
               <Text style={styles.message}>Erneut versuchen</Text>
             </Pressable>
           )}
-        </View>
+        </Animated.View>
       )}
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {flex: 1, backgroundColor: '#000000'},
-  webview: {flex: 1, backgroundColor: '#000000'},
+  container: {flex: 1, backgroundColor: '#101011'},
+  webview: {flex: 1, backgroundColor: '#101011'},
   overlay: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#000000',
+    backgroundColor: '#101011',
   },
   message: {color: '#ffffff', fontSize: 22, textAlign: 'center'},
   retry: {marginTop: 24, padding: 16, backgroundColor: '#333333'},

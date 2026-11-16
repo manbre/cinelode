@@ -1,7 +1,8 @@
 schema-version = 1
 
 [package]
-title = "Basic UI React Native Application for project cinelode"
+title = "Cinelode"
+icon = "@image/cinelode.png"
 version = "0.1.0"
 # Floor so local builds pass vpt validate; pass an increasing --build-number for every Appstore upload.
 build-number = 1

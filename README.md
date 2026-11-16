@@ -108,7 +108,7 @@ inbound port on the router. Do not assume a privately installed CA is trusted
 on every Fire TV model. Certificate Transparency may disclose the hostname.
 
 Keep the server certificate (or certificate chain) and its matching private
-key outside the repository or in the ignored `certs/` directory. Keep the
+key in the certificate manager's storage, outside the repository. Keep the
 private key readable only by its owner and never share or commit it. From the
 project root, set the actual certificate paths in the shell that starts Cinelode:
 
@@ -125,7 +125,9 @@ unset when using localhost or an IP address. Do not use a wildcard.
 
 Open `https://<certificate-hostname-or-ip>:5173` on a trusted LAN client, using
 the exact hostname or IP address listed in the certificate's subject alternative
-names. For a certificate issued by a local CA such as mkcert, each client must
+names. The standard `npm run dev:lan` uses port 5173; this computer's
+autostarted Fire TV frontend uses `https://cinelode.duckdns.org:5175`. For a
+certificate issued by a local CA such as mkcert, each client must
 trust that CA independently; trust on the server does not establish trust on a
 Fire TV. Verify that the device supports the required trust configuration. Never
 copy the CA's private key to clients.
@@ -147,6 +149,33 @@ The `dev:lan:http` convenience mode does not provide persistent login; do not
 use it on an untrusted network. The actual Fire TV model/browser must still be
 tested for cookie persistence before claiming device compatibility.
 
+### Automatic start on Linux
+
+The backend can run as a systemd user service at computer startup. The example
+unit in `deploy/systemd/user/cinelode-backend.service` runs Spring on loopback
+port 8080, enables the secure persistent-login cookie used by the HTTPS
+frontend, and restarts the process after a failure. It reads the media paths,
+database and password hash from the backend's existing environment files.
+The unit assumes the project is at `~/Dokumente/code/cinelode`; adjust its
+paths if your checkout is elsewhere.
+
+Install and enable it from the project root:
+
+```sh
+mkdir -p ~/.config/systemd/user
+cp deploy/systemd/user/cinelode-backend.service ~/.config/systemd/user/
+systemctl --user daemon-reload
+systemctl --user enable --now cinelode-backend.service
+```
+
+User services normally start when that user logs in. To start Cinelode during
+boot before login, enable lingering for the account with
+`sudo loginctl enable-linger "$USER"`. An HTTPS frontend service must also be
+running and proxy `/api` to `127.0.0.1:8080`. If you start the complete stack
+with `npm run dev:lan`, stop the separate backend service first to avoid two
+processes competing for port 8080. Check service output with
+`journalctl --user -u cinelode-backend.service`.
+
 ### Amazon Vega WebView client
 
 `client/` is a native wrapper around the existing React frontend, not a second
@@ -161,8 +190,9 @@ not every Fire TV runs Vega.
 2. Copy `client/config.example.json` to `client/config.json` and
    `client/manifest.example.toml` to `client/manifest.toml`. These local files
    are ignored by Git. Set `frontendUrl` in `client/config.json` to the frontend's HTTPS origin,
-   for example `https://cinelode.example:5173`. Replace the example hostname
-   with your own LAN-resolved hostname. Only an HTTPS origin with an optional
+   for example `https://cinelode.duckdns.org:5175` for this computer's
+   autostarted Fire TV service. Replace it with your own LAN-resolved hostname
+   and port if different. Only an HTTPS origin with an optional
    port and trailing slash is recommended: no path, query, fragment or
    credentials. The wrapper also accepts private IPv4 HTTP origins for local
    development, but HTTPS is required for LAN deployment.
@@ -200,8 +230,9 @@ not every Fire TV runs Vega.
    The build also reports a missing Metro `assets/*` copy when there are no
    Metro assets, even though these packages validate; check the output rather
    than treating the build as proof of device compatibility.
-   See the [Vega client guide](client/README.md) for the reproduced build
-   side effect, dependency assessment, navigation proposal and device test plan.
+   See the [Vega client guide](docs/vega-client.md) for the reproduced build
+   side effect, dependency assessment, implemented navigation behavior and
+   device test plan.
 
 Vite serves both the UI and proxied `/api` requests from the same HTTPS origin;
 Spring remains on `127.0.0.1:8080`. Third-party cookies are not enabled. The
@@ -209,14 +240,14 @@ existing secure session and CSRF cookies and media access remain in place;
 actual WebView persistence and playback behavior still require device
 testing. Vite is a development server, not a production deployment.
 
-The WebView receives TV focus and the wrapper handles the Back key for
-WebView page history, otherwise allowing the system's default Back behavior.
-The current React UI manages selections and playback as component state, not
-browser history, so Back does not currently undo those selections or close the
-player. Directional navigation, keyboard entry, focus, Back behavior, media
-controls, seeking, track selection, previews and byte-range playback must all
-be verified on the target device; a successful package build does not prove
-these capabilities.
+The frontend adds same-document history entries when a movie or season is
+opened. Escape or the native Back key returns from playback to the library,
+then shows the exit confirmation at the catalog root. The last catalog focus is
+restored when a title view closes. The wrapper handles WebView page history
+and forwards Back at the root to the frontend. Directional navigation,
+keyboard entry, focus, Back behavior, media controls, seeking, track selection,
+previews and byte-range playback must still be verified on the target device;
+a successful package build does not prove these capabilities.
 
 ### Direct Spring Boot deployment
 
@@ -252,6 +283,7 @@ Relevant environment properties (defaults are shown in
 | `CINELODE_DATABASE_URL` | SQLite JDBC URL; defaults to `jdbc:sqlite:data/cinelode.db`. |
 | `CINELODE_DB_BACKUP_DIRECTORY` | Optional directory for verified pre-migration database backups. |
 | `CINELODE_FFMPEG_PATH`, `CINELODE_FFPROBE_PATH` | FFmpeg/FFprobe executable paths; default to the executable names on `PATH`. |
+| `CINELODE_SERVER_ADDRESS`, `CINELODE_TLS_ENABLED`, `CINELODE_TLS_KEYSTORE`, `CINELODE_TLS_KEYSTORE_PASSWORD` | Spring bind address and HTTPS keystore settings for direct deployment. |
 | `OMDB_API_KEY` | Optional OMDb metadata API key. |
 
 Protect the database, backups, media directories, TLS private key and

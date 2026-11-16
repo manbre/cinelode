@@ -119,28 +119,11 @@ function Home({ onLogout }) {
       returnToPreview()
       return
     }
-    if (selectedMovie) {
-      clearSelection()
-      setSelectedMovie(null)
-      if (window.history.state?.cinelodeView) {
-        window.history.back()
-      }
-      return
-    }
-    if (isSeriesMode) {
-      setIsSeriesMode(false)
-      return
-    }
     setShowExitConfirmation(true)
   }, [
-    clearSelection,
     isFullPlayback,
     isFullscreen,
-    isSeriesMode,
     returnToPreview,
-    selectedMovie,
-    setIsSeriesMode,
-    setSelectedMovie,
     setError,
     setShowExitConfirmation,
     showExitConfirmation,

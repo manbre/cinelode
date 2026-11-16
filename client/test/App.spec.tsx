@@ -36,6 +36,22 @@ jest.mock('@amazon-devices/webview', () => {
 jest.mock('@amazon-devices/react-native-kepler', () => ({
   usePreventHideSplashScreen: jest.fn(),
   useHideSplashScreenCallback: () => mockHideSplash,
+  Animated: {
+    Value: class {
+      setValue = jest.fn();
+      stopAnimation = jest.fn();
+    },
+    timing: (
+      value: {setValue: (next: number) => void},
+      animationConfig: {toValue: number},
+    ) => ({
+      start: (callback?: (result: {finished: boolean}) => void) => {
+        value.setValue(animationConfig.toValue);
+        callback?.({finished: true});
+      },
+    }),
+    View: 'Animated.View',
+  },
   Linking: {openURL: (...args: unknown[]) => mockOpenURL(...args)},
   BackHandler: {
     addEventListener: (event: string, handler: () => boolean) =>
