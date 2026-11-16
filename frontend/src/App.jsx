@@ -98,22 +98,26 @@ function App() {
     <>
       {content}
       {introVisible && (
-        <video
-          src="/Cinelode_intro.mp4"
-          autoPlay
-          muted
-          playsInline
+        <div
           aria-hidden="true"
-          tabIndex={-1}
-          onEnded={finishIntro}
-          onError={() => {
-            console.warn('Cinelode: intro video could not be loaded')
-            finishIntro()
-          }}
-          className={`pointer-events-none fixed inset-0 z-[100] h-full w-full bg-[#101011] object-contain transition-opacity duration-500 ${
+          className={`pointer-events-none fixed -inset-[2px] z-[100] overflow-hidden bg-black transition-opacity duration-500 ${
             introFading ? 'opacity-0' : 'opacity-100'
           }`}
-        />
+        >
+          <video
+            src="/Cinelode_intro.mp4"
+            autoPlay
+            muted
+            playsInline
+            tabIndex={-1}
+            onEnded={finishIntro}
+            onError={() => {
+              console.warn('Cinelode: intro video could not be loaded')
+              finishIntro()
+            }}
+            className="absolute inset-0 size-full bg-black object-cover"
+          />
+        </div>
       )}
     </>
   )

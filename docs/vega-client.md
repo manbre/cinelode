@@ -242,10 +242,12 @@ assess runtime reachability separately. Keep SDK and Node updates controlled.
 ## Back and navigation: implemented
 
 The wrapper has one native `hardwareBackPress` listener. It calls the
-installed WebView 4.0.5 `goBack()` method only when the last navigation event
-reported `canGoBack`. At the root it forwards a DOM `BrowserBack` event into
-the WebView, allowing the frontend to show its exit confirmation dialog. A
-confirmed `cinelode-exit-confirmed` message calls the installed
+installed WebView 4.0.5 `goBack()` method only when the frontend history bridge
+reports an in-app selection entry. At the catalog root it forwards a DOM
+`BrowserBack` event into the WebView, allowing the frontend to show its exit
+confirmation dialog. It ignores the WebView's native `canGoBack` flag because
+that flag can be stale at the catalog root. A confirmed
+`cinelode-exit-confirmed` message calls the installed
 `BackHandler.exitApp()` API. `allowSystemKeyEvents` is deliberately not
 enabled: the SDK documents that it consumes Back in the WebView and prevents
 the native fallback.
@@ -264,10 +266,11 @@ Amazon links in Prime Video has not been verified on a device.
 
 Catalog selections add a same-document history entry. Escape/BrowserBack and
 the native Back path return from playback to the library before showing the
-exit confirmation at the catalog root. The last catalog focus is restored when
-a title view is closed. Play/Pause is handled by the media element when the
-device dispatches `MediaPlayPause`; fast-forward and rewind seek by 30 and 10
-seconds respectively.
+exit confirmation at the catalog root. In the series library, Back first
+switches to the movie library; the next Back opens the exit confirmation. The
+last catalog focus is restored when a title view is closed. Play/Pause is
+handled by the media element when the device dispatches `MediaPlayPause`;
+fast-forward and rewind seek by 30 and 10 seconds respectively.
 
 Preview playback advances after 25 seconds. The client fades the current clip
 out for 350 ms, starts the next clip, and fades it in for 350 ms. The

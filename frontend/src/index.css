@@ -96,8 +96,8 @@ body {
   }
 
   .details-panel > .preview-layout-player + .movie-info {
-    /* Close the gap left by the 95% height and 10% upward translation. */
-    transform: translateY(calc(-29 * var(--browser-preview-height, 0px) / 190));
+    /* Preserve the small overlap after reducing the player's upward shift. */
+    transform: translateY(calc(-19.5 * var(--browser-preview-height, 0px) / 190));
   }
 
   .details-panel > .preview-layout-player + .movie-info > :first-child {
@@ -135,7 +135,7 @@ svg.lucide {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  object-position: 50% 30%;
-  transform: scale(1.05);
+  object-position: 50% 15%;
+  transform: scale(1.02);
   transform-origin: center;
 }

@@ -98,7 +98,7 @@ describe('App', () => {
     expect(mockHideSplash).toHaveBeenCalled();
   });
 
-  it('shows loading and handles page load, back navigation and cleanup', () => {
+  it('shows loading and forwards root back after the WebView finishes loading', () => {
     const screen = render(<App />);
     const webview = screen.getByTestId('cinelode-webview');
     expect(webview.props.source.uri).toMatch(
@@ -114,7 +114,10 @@ describe('App', () => {
     expect(screen.queryByText('Cinelode wird geladen ...')).toBeNull();
     expect(mockHideSplash).toHaveBeenCalled();
     expect(back()).toBe(true);
-    expect(mockGoBack).toHaveBeenCalled();
+    expect(mockGoBack).not.toHaveBeenCalled();
+    expect(mockInjectJavaScript).toHaveBeenLastCalledWith(
+      expect.stringContaining("key: 'BrowserBack'"),
+    );
     screen.unmount();
     expect(mockRemove).toHaveBeenCalled();
   });

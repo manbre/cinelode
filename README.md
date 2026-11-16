@@ -242,9 +242,11 @@ testing. Vite is a development server, not a production deployment.
 
 The frontend adds same-document history entries when a movie or season is
 opened. Escape or the native Back key returns from playback to the library,
-then shows the exit confirmation at the catalog root. The last catalog focus is
-restored when a title view closes. The wrapper handles WebView page history
-and forwards Back at the root to the frontend. Directional navigation,
+then shows the exit confirmation at the catalog root. From the series library,
+Back first switches to the movie library; the next Back opens the exit
+confirmation. The last catalog focus is restored when a title view closes. The
+wrapper handles WebView page history and forwards Back at the root to the
+frontend. Directional navigation,
 keyboard entry, focus, Back behavior, media controls, seeking, track selection,
 previews and byte-range playback must still be verified on the target device;
 a successful package build does not prove these capabilities.

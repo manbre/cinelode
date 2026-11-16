@@ -19,7 +19,6 @@ import {isValidFrontendUrl} from './config';
 
 export const App = () => {
   const webRef = useRef<React.ElementRef<typeof WebView>>(null);
-  const nativeCanGoBack = useRef(false);
   const webHistoryCanGoBack = useRef(false);
   const webPlayerIsFullscreen = useRef(false);
   const loadFailed = useRef(false);
@@ -57,10 +56,7 @@ export const App = () => {
         );
         return true;
       }
-      if (
-        (nativeCanGoBack.current || webHistoryCanGoBack.current) &&
-        webRef.current
-      ) {
+      if (webHistoryCanGoBack.current && webRef.current) {
         webRef.current.goBack();
         return true;
       }
@@ -145,8 +141,7 @@ export const App = () => {
           mediaPlaybackRequiresUserAction={false}
           mixedContentMode="never"
           source={{uri: webViewUrl}}
-          onLoadStart={({nativeEvent}) => {
-            nativeCanGoBack.current = nativeEvent.canGoBack;
+          onLoadStart={() => {
             webPlayerIsFullscreen.current = false;
             loadFailed.current = false;
             if (loadingOverlayTimer.current) {
@@ -167,8 +162,7 @@ export const App = () => {
             console.info('Cinelode: page loading started');
             hideSplashScreen();
           }}
-          onLoad={({nativeEvent}) => {
-            nativeCanGoBack.current = nativeEvent.canGoBack;
+          onLoad={() => {
             hasLoadedOnce.current = true;
             if (loadingOverlayTimer.current) {
               clearTimeout(loadingOverlayTimer.current);
@@ -262,7 +256,6 @@ export const App = () => {
             <Pressable
               hasTVPreferredFocus
               onPress={() => {
-                nativeCanGoBack.current = false;
                 webHistoryCanGoBack.current = false;
                 loadFailed.current = false;
                 loadingOverlayOpacity.stopAnimation();

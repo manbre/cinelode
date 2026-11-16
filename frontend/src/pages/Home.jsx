@@ -119,11 +119,26 @@ function Home({ onLogout }) {
       returnToPreview()
       return
     }
+    if (isSeriesMode) {
+      clearSelection()
+      setSelectedMovie(null)
+      setIsSeriesMode(false)
+      if (window.history.state?.cinelodeView) {
+        window.history.back()
+      } else {
+        notifyNativeHistory(false)
+      }
+      return
+    }
     setShowExitConfirmation(true)
   }, [
+    clearSelection,
     isFullPlayback,
     isFullscreen,
+    isSeriesMode,
     returnToPreview,
+    setIsSeriesMode,
+    setSelectedMovie,
     setError,
     setShowExitConfirmation,
     showExitConfirmation,
@@ -236,6 +251,12 @@ function Home({ onLogout }) {
         returnToPreview()
         return
       }
+      if (isSeriesMode) {
+        clearSelection()
+        setSelectedMovie(null)
+        setIsSeriesMode(false)
+        return
+      }
       if (selectedMovie) {
         clearSelection()
         setSelectedMovie(null)
@@ -247,9 +268,11 @@ function Home({ onLogout }) {
     clearSelection,
     isFullPlayback,
     isFullscreen,
+    isSeriesMode,
     returnToPreview,
     selectedMovie,
     setError,
+    setIsSeriesMode,
     setSelectedMovie,
   ])
   useEffect(() => {

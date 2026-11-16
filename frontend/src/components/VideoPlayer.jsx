@@ -155,10 +155,10 @@ function VideoPlayer({
       } ${
         !isFullPlayback
           ? useVegaPreview
-            ? 'preview-layout-player lg:aspect-auto lg:h-full lg:min-h-0 lg:[transform:translateY(-10%)]'
+            ? 'preview-layout-player lg:aspect-auto lg:h-full lg:min-h-0 lg:[transform:translateY(-5%)]'
             : `[clip-path:inset(0)] lg:aspect-auto lg:h-full lg:min-h-0 ${
                 selectedMovie.source !== 'EXTERNAL'
-                  ? 'preview-layout-player [transform:translateY(-10%)]'
+                  ? 'preview-layout-player [transform:translateY(-5%)]'
                   : ''
               }`
           : ''
