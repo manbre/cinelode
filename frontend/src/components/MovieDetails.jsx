@@ -69,8 +69,8 @@ function MovieDetails({
         </nav>
       )}
 
-      <div className="pb-2 pt-3 pl-3 pr-5 sm:pl-4 sm:pr-7 lg:pl-5 lg:pr-4">
-        <div className="space-y-3">
+      <div className="pb-2 pt-6 pl-3 pr-5 sm:pl-4 sm:pr-7 lg:pl-5 lg:pr-4">
+        <div className="space-y-8">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-3 text-sm text-white/75">
             <span className="inline-flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
               {selectedMovie.imdbRating != null && (

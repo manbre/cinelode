@@ -8,7 +8,7 @@ import {
   Volume2,
   X,
 } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useRef, useState } from 'react'
 import { formatTime, trackLabel } from '../utils/playback'
 import { isNativeWebView } from '../utils/runtime'
 function TrackMenu({ label, icon, value, options, onChange }) {
@@ -126,32 +126,7 @@ function VideoPlayer({
   playbackPositionRef,
   onPlaybackEnded,
 }) {
-  const useVegaPreview =
-    !isFullPlayback && selectedMovie.source !== 'EXTERNAL' && isNativeWebView()
-  useEffect(() => {
-    const player = playerContainerRef.current
-    const panel = player?.parentElement
-    if (
-      isFullPlayback ||
-      selectedMovie.source === 'EXTERNAL' ||
-      !player ||
-      !panel
-    ) {
-      return
-    }
-
-    const observer = new ResizeObserver(([entry]) => {
-      panel.style.setProperty(
-        '--browser-preview-height',
-        `${entry.contentRect.height}px`,
-      )
-    })
-    observer.observe(player)
-    return () => {
-      observer.disconnect()
-      panel.style.removeProperty('--browser-preview-height')
-    }
-  }, [isFullPlayback, selectedMovie.source, playerContainerRef])
+  const useVegaPreview = !isFullPlayback && isNativeWebView()
   return (
     <div
       ref={playerContainerRef}
@@ -165,12 +140,8 @@ function VideoPlayer({
       } ${
         !isFullPlayback
           ? useVegaPreview
-            ? 'preview-layout-player lg:aspect-auto lg:h-full lg:min-h-0 lg:[transform:translateY(-5%)]'
-            : `[clip-path:inset(0)] lg:aspect-auto lg:h-full lg:min-h-0 ${
-                selectedMovie.source !== 'EXTERNAL'
-                  ? 'preview-layout-player [transform:translateY(-5%)]'
-                  : ''
-              }`
+            ? 'preview-layout-player lg:aspect-auto lg:h-full lg:min-h-0'
+            : 'preview-layout-player [clip-path:inset(0)] lg:aspect-auto lg:h-full lg:min-h-0'
           : ''
       } [&:fullscreen]:aspect-auto [&:fullscreen]:h-screen [&:fullscreen]:w-screen [&:fullscreen]:min-h-0 ${
         isFullscreen && !controlsVisible ? 'cursor-none' : ''

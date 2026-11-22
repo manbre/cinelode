@@ -83,7 +83,7 @@ body {
 
   .details-panel {
     display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
+    grid-template-rows: 52.5% minmax(0, 1fr);
     align-self: stretch;
     width: 100%;
     height: 100%;
@@ -97,23 +97,6 @@ body {
     height: 100%;
     min-width: 0;
     min-height: 0;
-  }
-
-  .details-panel > .preview-layout-player {
-    height: 95%;
-  }
-
-  .details-panel > .preview-layout-player + .movie-info {
-    /* Preserve the small overlap after reducing the player's upward shift. */
-    transform: translateY(calc(-19.5 * var(--browser-preview-height, 0px) / 190));
-  }
-
-  .details-panel > .preview-layout-player + .movie-info > :first-child {
-    padding-top: 1.6875rem;
-  }
-
-  .details-panel > .preview-layout-player + .movie-info > nav:first-child {
-    padding-top: 1.125rem;
   }
 
   .details-panel > .movie-info {
