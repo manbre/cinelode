@@ -7,6 +7,7 @@ import com.cinelode.backend.application.port.PosterStorage;
 import com.cinelode.backend.domain.Movie;
 import com.cinelode.backend.domain.MovieFile;
 import com.cinelode.backend.domain.MovieMetadata;
+import com.cinelode.backend.domain.MetadataStatus;
 
 import java.util.List;
 import java.util.Optional;
@@ -71,6 +72,20 @@ public class SynchronizeLibrary {
             }
         }
         return discovered.size();
+    }
+
+    /** Retries movies whose previous metadata lookup failed temporarily. */
+    public int retryErroredMetadata() {
+        List<Movie> failed = movies.findMoviesWithIncompleteMetadata().stream()
+                .filter(movie -> movie.metadataStatus() == MetadataStatus.ERROR)
+                .toList();
+        if (failed.isEmpty()) {
+            return 0;
+        }
+        try (ExecutorService executor = Executors.newFixedThreadPool(MAX_CONCURRENT_METADATA_LOOKUPS)) {
+            enrichMetadataConcurrently(failed, executor);
+        }
+        return failed.size();
     }
 
     /** Fetches metadata for one pass concurrently while limiting provider requests. */

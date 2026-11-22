@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import CatalogPanel from '../components/CatalogPanel'
 import MovieDetails from '../components/MovieDetails'
 import VideoPlayer from '../components/VideoPlayer'
@@ -6,7 +6,11 @@ import { useCatalog } from '../hooks/useCatalog'
 import { usePlayback } from '../hooks/usePlayback'
 import { useTvNavigation } from '../hooks/useTvNavigation'
 import { useCinelodeStore } from '../store'
-import { contentKey, getNextPlaybackSelection, isMovie } from '../utils/catalog'
+import {
+  contentKey,
+  getInitialLibrarySelection,
+  getNextPlaybackSelection,
+} from '../utils/catalog'
 import { openExternalMovie } from '../utils/externalPlayback'
 const MOVIES_API = '/api/movies'
 function notifyNativeHistory(canGoBack) {
@@ -16,6 +20,21 @@ function notifyNativeHistory(canGoBack) {
       canGoBack,
     }),
   )
+}
+function setCatalogHistoryView(view) {
+  const state = { ...window.history.state, cinelodeView: view }
+  if (window.history.state?.cinelodeView) {
+    window.history.replaceState(state, '', window.location.href)
+  } else {
+    window.history.pushState(state, '', window.location.href)
+  }
+  notifyNativeHistory(true)
+}
+function clearCatalogHistoryView() {
+  const state = { ...window.history.state }
+  delete state.cinelodeView
+  window.history.replaceState(state, '', window.location.href)
+  notifyNativeHistory(false)
 }
 function notifyNativePlayerState(isFullscreen) {
   window.ReactNativeWebView?.postMessage(
@@ -102,6 +121,39 @@ function Home({ onLogout }) {
     videoRef,
     volume,
   } = usePlayback({ selectedMovie, setError })
+  const firstLibraryMovie = useMemo(
+    () => getInitialLibrarySelection(movies),
+    [movies],
+  )
+  const resetToInitialView = useCallback(() => {
+    setIsSeriesMode(false)
+    setSearch('')
+    setSelectedDuration('')
+    setSelectedGenre('')
+    setSelectedPerson('')
+    setSelectedRated('')
+    if (firstLibraryMovie) {
+      if (!selectedMovie || contentKey(selectedMovie) !== contentKey(firstLibraryMovie)) {
+        selectContent(firstLibraryMovie)
+        setSelectedMovie(firstLibraryMovie)
+      }
+    } else {
+      clearSelection()
+      setSelectedMovie(null)
+    }
+  }, [
+    clearSelection,
+    firstLibraryMovie,
+    selectedMovie,
+    selectContent,
+    setIsSeriesMode,
+    setSearch,
+    setSelectedDuration,
+    setSelectedGenre,
+    setSelectedMovie,
+    setSelectedPerson,
+    setSelectedRated,
+  ])
   const playlistPositions = new Map(
     playlist.map((movie, index) => [contentKey(movie), index + 1]),
   )
@@ -119,26 +171,34 @@ function Home({ onLogout }) {
       returnToPreview()
       return
     }
-    if (isSeriesMode) {
-      clearSelection()
-      setSelectedMovie(null)
-      setIsSeriesMode(false)
-      if (window.history.state?.cinelodeView) {
-        window.history.back()
-      } else {
-        notifyNativeHistory(false)
-      }
+    const isInitialView = !isSeriesMode
+      && firstLibraryMovie
+      && selectedMovie
+      && contentKey(selectedMovie) === contentKey(firstLibraryMovie)
+      && !search
+      && !selectedDuration
+      && !selectedGenre
+      && !selectedPerson
+      && !selectedRated
+    if (!isInitialView) {
+      resetToInitialView()
+      clearCatalogHistoryView()
       return
     }
     setShowExitConfirmation(true)
   }, [
-    clearSelection,
+    firstLibraryMovie,
     isFullPlayback,
     isFullscreen,
     isSeriesMode,
+    resetToInitialView,
     returnToPreview,
-    setIsSeriesMode,
-    setSelectedMovie,
+    search,
+    selectedDuration,
+    selectedGenre,
+    selectedMovie,
+    selectedPerson,
+    selectedRated,
     setError,
     setShowExitConfirmation,
     showExitConfirmation,
@@ -241,8 +301,8 @@ function Home({ onLogout }) {
   }, [isFullPlayback])
   useEffect(() => {
     const handleHistoryBack = () => {
-      notifyNativeHistory(Boolean(window.history.state?.cinelodeView))
       if (isFullscreen || isFullPlayback) {
+        notifyNativeHistory(Boolean(window.history.state?.cinelodeView))
         if (isFullscreen) {
           document.exitFullscreen().catch(() => {
             setError('Could not exit fullscreen.')
@@ -251,29 +311,17 @@ function Home({ onLogout }) {
         returnToPreview()
         return
       }
-      if (isSeriesMode) {
-        clearSelection()
-        setSelectedMovie(null)
-        setIsSeriesMode(false)
-        return
-      }
-      if (selectedMovie) {
-        clearSelection()
-        setSelectedMovie(null)
-      }
+      resetToInitialView()
+      clearCatalogHistoryView()
     }
     window.addEventListener('popstate', handleHistoryBack)
     return () => window.removeEventListener('popstate', handleHistoryBack)
   }, [
-    clearSelection,
     isFullPlayback,
     isFullscreen,
-    isSeriesMode,
+    resetToInitialView,
     returnToPreview,
-    selectedMovie,
     setError,
-    setIsSeriesMode,
-    setSelectedMovie,
   ])
   useEffect(() => {
     const controller = new AbortController()
@@ -300,7 +348,7 @@ function Home({ onLogout }) {
             ? seriesData.map((season) => ({ ...season, source: 'SERIES' }))
             : [],
         )
-        const firstLocalMovie = loadedMovies.find(isMovie)
+        const firstLocalMovie = getInitialLibrarySelection(loadedMovies)
         if (firstLocalMovie) {
           selectContent(firstLocalMovie)
           setSelectedMovie(firstLocalMovie)
@@ -357,12 +405,7 @@ function Home({ onLogout }) {
       selectContent(movie)
       setSelectedMovie(movie)
       selectionActivatedRef.current = true
-      window.history.pushState(
-        { cinelodeView: 'movie' },
-        '',
-        window.location.href,
-      )
-      notifyNativeHistory(true)
+      setCatalogHistoryView('movie')
     },
     [resumePreview, selectContent, selectedMovieRef, setSelectedMovie],
   )
@@ -391,12 +434,7 @@ function Home({ onLogout }) {
       selectContent(selection)
       setSelectedMovie(selection)
       selectionActivatedRef.current = true
-      window.history.pushState(
-        { cinelodeView: 'season' },
-        '',
-        window.location.href,
-      )
-      notifyNativeHistory(true)
+      setCatalogHistoryView('season')
     },
     [
       resumePreview,
@@ -528,9 +566,6 @@ function Home({ onLogout }) {
       } else {
         openMovie(firstCard)
       }
-    } else {
-      clearSelection()
-      setSelectedMovie(null)
     }
   }
   const handleLogout = async () => {
@@ -606,6 +641,7 @@ function Home({ onLogout }) {
               selectedMovie={selectedMovie}
               selectedMovieRef={selectedMovieRef}
               playbackUrl={playbackUrl}
+              onSeek={handleSeek}
               previewTransition={previewTransition}
               advancePreview={advancePreview}
               playbackStart={playbackStart}

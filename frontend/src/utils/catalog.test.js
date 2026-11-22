@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import test from 'node:test'
 import {
   compareMovies,
+  getInitialLibrarySelection,
   getNextPlaybackSelection,
   getPeople,
   isMovie,
@@ -30,6 +31,17 @@ test('sorts franchise groups before standalone titles', () => {
   ]
 
   assert.deepEqual(movies.sort(compareMovies).map((movie) => movie.title), ['First', 'Zebra'])
+})
+
+test('uses the first sorted movie as the initial library selection', () => {
+  const movies = [
+    { source: 'SERIES', id: 1, title: 'A Series' },
+    { source: 'LOCAL', id: 2, title: 'Zebra', year: 2020 },
+    { source: 'EXTERNAL', id: 3, title: 'Alpha', year: 2000 },
+  ]
+
+  assert.equal(getInitialLibrarySelection(movies).id, 3)
+  assert.equal(getInitialLibrarySelection([{ source: 'SERIES', id: 1 }]), null)
 })
 
 test('normalizes names before comparison', () => {

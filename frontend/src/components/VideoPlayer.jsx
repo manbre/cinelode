@@ -1,4 +1,13 @@
-import { Captions, Maximize, Pause, Play, Volume2, X } from 'lucide-react'
+import {
+  Captions,
+  FastForward,
+  Maximize,
+  Pause,
+  Play,
+  Rewind,
+  Volume2,
+  X,
+} from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { formatTime, trackLabel } from '../utils/playback'
 import { isNativeWebView } from '../utils/runtime'
@@ -105,6 +114,7 @@ function VideoPlayer({
   duration,
   isPlaying,
   seekPlayback,
+  onSeek,
   volume,
   setVolume,
   audioTracks,
@@ -281,6 +291,26 @@ function VideoPlayer({
                 ) : (
                   <Play size={22} fill="currentColor" />
                 )}
+              </button>
+              <button
+                type="button"
+                tabIndex={controlsVisible ? 0 : -1}
+                aria-label="Back 10 minutes"
+                onClick={() => onSeek(-600)}
+                className="flex items-center gap-1 rounded-full p-2 text-xs transition hover:bg-white/15"
+              >
+                <Rewind size={22} />
+                <span>10 min</span>
+              </button>
+              <button
+                type="button"
+                tabIndex={controlsVisible ? 0 : -1}
+                aria-label="Forward 10 minutes"
+                onClick={() => onSeek(600)}
+                className="flex items-center gap-1 rounded-full p-2 text-xs transition hover:bg-white/15"
+              >
+                <FastForward size={22} />
+                <span>10 min</span>
               </button>
               <span className="min-w-[5.5rem] text-xs tabular-nums">
                 {formatTime(currentTime)} / {formatTime(duration)}

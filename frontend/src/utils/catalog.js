@@ -107,6 +107,10 @@ export function compareMovies(first, second) {
     || (first.year ?? 0) - (second.year ?? 0)
 }
 
+export function getInitialLibrarySelection(movies) {
+  return movies.filter(isMovie).sort(compareMovies)[0] ?? null
+}
+
 export function getPeople(movie, role) {
   return [movie[role]]
     .flatMap((value) => value?.split(',') ?? [])

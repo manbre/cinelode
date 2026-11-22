@@ -2,9 +2,11 @@ package com.cinelode.backend;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /** Boots the Cinelode Spring application. */
 @SpringBootApplication
+@EnableScheduling
 public class BackendApplication {
 
 	/** Launches the Spring Boot application. */

@@ -92,6 +92,32 @@ class SynchronizeLibraryTest {
         assertEquals(3L, repository.savedMetadataMovieId);
     }
 
+    /** Retries error records later without repeating terminal not-found results. */
+    @Test
+    void retryErroredMetadataRetriesOnlyFailedLookups() {
+        Movie failedMovie = new Movie(6L, "Retry After Network", 2024,
+                "/movies/Retry After Network (2024).mkv", null,
+                null, null, null, null, null, null, null, null, null, MetadataStatus.ERROR);
+        Movie notFoundMovie = new Movie(7L, "Still Unknown", 2024,
+                "/movies/Still Unknown (2024).mkv", null,
+                null, null, null, null, null, null, null, null, null, MetadataStatus.NOT_FOUND);
+        FakeRepository repository = new FakeRepository(List.of(failedMovie, notFoundMovie));
+        AtomicInteger calls = new AtomicInteger();
+        MovieMetadata metadata = new MovieMetadata("Drama", "Director", "Actor", "Plot", "90 min",
+                "Writer", "PG", 7.5, 1, null);
+        SynchronizeLibrary useCase = new SynchronizeLibrary(
+                new FakeCatalog(List.of()), repository, (title, year) -> {
+                    calls.incrementAndGet();
+                    return Optional.of(metadata);
+                }, new FakePosterStorage());
+
+        int retried = useCase.retryErroredMetadata();
+
+        assertEquals(1, retried);
+        assertEquals(1, calls.get());
+        assertEquals(6L, repository.savedMetadataMovieId);
+    }
+
     /** Fetches different movies in the same pass concurrently. */
     @Test
     void fetchesMetadataConcurrentlyWithinEachPass() {
