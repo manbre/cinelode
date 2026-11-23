@@ -1,6 +1,75 @@
+import { useLayoutEffect, useRef, useState } from 'react'
 import { Play, Star } from 'lucide-react'
 import AwardWins from './AwardWins'
 import { getPeople, normalizePersonName } from '../utils/catalog'
+
+function PlotText({ text }) {
+  const plotRef = useRef(null)
+  const [visibleText, setVisibleText] = useState(text)
+
+  useLayoutEffect(() => {
+    const plot = plotRef.current
+    if (!plot || !text) return undefined
+
+    const updateVisibleText = () => {
+      const width = plot.getBoundingClientRect().width
+      if (!width) return
+
+      const measure = plot.cloneNode(false)
+      measure.classList.remove('line-clamp-4')
+      Object.assign(measure.style, {
+        position: 'fixed',
+        left: '-10000px',
+        top: '0',
+        visibility: 'hidden',
+        display: 'block',
+        width: `${width}px`,
+        height: 'auto',
+        maxHeight: 'none',
+        overflow: 'visible',
+        webkitLineClamp: 'unset',
+        webkitBoxOrient: 'unset',
+      })
+      document.body.append(measure)
+
+      const lineHeight = Number.parseFloat(getComputedStyle(plot).lineHeight)
+      const maxHeight = lineHeight * 4
+      const fits = (value) => {
+        measure.textContent = value
+        return measure.getBoundingClientRect().height <= maxHeight + 1
+      }
+
+      if (fits(text)) {
+        setVisibleText(text)
+        measure.remove()
+        return
+      }
+
+      const words = text.trim().split(/\s+/)
+      let low = 0
+      let high = words.length
+      while (low < high) {
+        const middle = Math.ceil((low + high) / 2)
+        if (fits(`${words.slice(0, middle).join(' ')}…`)) low = middle
+        else high = middle - 1
+      }
+
+      setVisibleText(`${words.slice(0, low).join(' ')}…`)
+      measure.remove()
+    }
+
+    updateVisibleText()
+    const observer = new ResizeObserver(updateVisibleText)
+    observer.observe(plot)
+    return () => observer.disconnect()
+  }, [text])
+
+  return (
+    <p ref={plotRef} className="text-sm leading-relaxed text-white/80">
+      {visibleText}
+    </p>
+  )
+}
 
 // Displays the selected title's metadata and keeps episode/person actions with that view.
 function MovieDetails({
@@ -127,11 +196,11 @@ function MovieDetails({
               : 'grid-cols-1'
           }`}>
             <section>
-              <p className="text-sm leading-relaxed text-white/80">
-                {selectedMovie.plot || (selectedMovie.source === 'SERIES'
+              <PlotText
+                text={selectedMovie.plot || (selectedMovie.source === 'SERIES'
                   ? 'No further information is available for this series.'
                   : 'No further information is available for this movie.')}
-              </p>
+              />
               {selectedMovie.writer && selectedMovie.source !== 'SERIES' && (
                 <div className="mt-3 text-sm">
                   <h3 className="mb-1 text-xs uppercase tracking-wider text-white/65">Writer</h3>
