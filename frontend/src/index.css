@@ -81,6 +81,10 @@ body {
     grid-template-rows: minmax(0, 1fr);
   }
 
+  .layout-frame.vega-layout {
+    height: 100dvh;
+  }
+
   .details-panel {
     display: grid;
     grid-template-rows: 52.5% minmax(0, 1fr);

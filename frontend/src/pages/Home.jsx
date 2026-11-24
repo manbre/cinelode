@@ -47,6 +47,7 @@ function notifyNativePlayerState(isFullscreen) {
 }
 // Coordinates catalog selection and playback state across the focused child components.
 function Home({ onLogout }) {
+  const isVega = isNativeWebView()
   const movies = useCinelodeStore((state) => state.movies)
   const seriesSeasons = useCinelodeStore((state) => state.seriesSeasons)
   const isSeriesMode = useCinelodeStore((state) => state.isSeriesMode)
@@ -663,7 +664,7 @@ function Home({ onLogout }) {
     }
   }
   return (
-    <main className="layout-frame relative isolate flex h-dvh min-h-0 flex-col overflow-hidden bg-[#101011]/55 text-text-primary lg:grid lg:grid-rows-[minmax(0,1fr)]">
+    <main className={`layout-frame relative isolate flex h-dvh min-h-0 flex-col overflow-hidden bg-[#101011]/55 text-text-primary lg:grid lg:grid-rows-[minmax(0,1fr)] ${isVega ? 'vega-layout' : ''}`}>
       {selectedMovie?.posterUrl && (
         <>
           <img
