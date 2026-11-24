@@ -15,7 +15,7 @@ test('text sizes increase without changing the layout root size', () => {
 
 test('IMDb rating displays its star and value without a border', () => {
   const details = readFileSync(new URL('../components/MovieDetails.jsx', import.meta.url), 'utf8')
-  assert.match(details, /selectedMovie\.imdbRating != null && \(\s*<span className="inline-flex items-center gap-1 px-2 py-1">\s*<Star[^>]*\/>\s*\{selectedMovie\.imdbRating\.toFixed\(1\)\}/)
+  assert.match(details, /selectedMovie\.imdbRating != null && \(\s*<span className="inline-flex items-center gap-1">\s*<Star[^>]*\/>\s*\{selectedMovie\.imdbRating\.toFixed\(1\)\}/)
 })
 
 test('browser previews share the same large-screen layout without changing full playback', () => {
@@ -27,7 +27,7 @@ test('browser previews share the same large-screen layout without changing full 
   assert.match(player, /!isFullPlayback\s*\?\s*useVegaPreview\s*\?\s*'preview-layout-player lg:aspect-auto lg:h-full lg:min-h-0'\s*:\s*'preview-layout-player \[clip-path:inset\(0\)\] lg:aspect-auto lg:h-full lg:min-h-0'\s*:\s*''/)
   assert.match(player, /!isFullPlayback\s*\?\s*'preview-video'\s*:\s*'inset-0 size-full'/)
   assert.match(player, /selectedMovie\.posterUrl && \(\s*<img[\s\S]*?className="absolute inset-0 size-full object-contain"/)
-  assert.match(details, /className="space-y-8"/)
+  assert.match(details, /className="space-y-6"/)
   assert.match(details, /className="pb-2 pt-6 pl-3 pr-5 sm:pl-4 sm:pr-7 lg:pl-5 lg:pr-4"/)
   const css = readFileSync(new URL('../index.css', import.meta.url), 'utf8')
   assert.match(css, /\.preview-video\s*\{[^}]*object-fit:\s*cover;[^}]*object-position:\s*50% 15%;[^}]*transform:\s*scale\(1\.02\);/)

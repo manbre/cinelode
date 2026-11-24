@@ -1,4 +1,4 @@
-import { contentKey } from '../utils/catalog'
+import { contentKey } from '../utils/catalog.js'
 
 export const createPlaylistSlice = (set) => ({
   playlist: [],

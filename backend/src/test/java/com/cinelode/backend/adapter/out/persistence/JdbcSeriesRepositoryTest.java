@@ -46,6 +46,7 @@ class JdbcSeriesRepositoryTest {
                 CREATE TABLE episodes (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
                     season_id INTEGER NOT NULL, episode_number INTEGER NOT NULL, file_path TEXT NOT NULL UNIQUE,
+                    playback_position REAL NOT NULL DEFAULT 0,
                     UNIQUE(season_id, episode_number)
                 )
                 """);

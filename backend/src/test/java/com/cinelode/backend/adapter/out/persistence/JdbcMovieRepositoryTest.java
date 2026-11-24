@@ -40,7 +40,8 @@ class JdbcMovieRepositoryTest {
                     rated TEXT,
                     imdb_rating REAL,
                     oscar_wins INTEGER,
-                    metadata_status TEXT
+                    metadata_status TEXT,
+                    playback_position REAL NOT NULL DEFAULT 0
                 )
                 """);
         jdbc.update("INSERT INTO movies(title, file_path, metadata_status) VALUES ('Pending', '/pending', 'PENDING')");
@@ -82,7 +83,8 @@ class JdbcMovieRepositoryTest {
                     rated TEXT,
                     imdb_rating REAL,
                     oscar_wins INTEGER,
-                    metadata_status TEXT
+                    metadata_status TEXT,
+                    playback_position REAL NOT NULL DEFAULT 0
                 )
                 """);
         jdbc.update("""
