@@ -1,4 +1,4 @@
-import { Clapperboard, ExternalLink, LogOut, Search, Tv } from 'lucide-react'
+import { Clapperboard, LogOut, Search, Tv } from 'lucide-react'
 import { contentKey } from '../utils/catalog'
 
 // Renders one selectable film or season poster in the catalog.
@@ -38,9 +38,18 @@ function MovieCard({ movie, index, selected, playlistPosition, onSelect }) {
           </span>
         )}
         {movie.source === 'EXTERNAL' && (
-          <span className="absolute left-2 top-2 inline-flex items-center gap-1.5 rounded-md border border-white/20 bg-black/80 px-2 py-1 text-[0.625rem] font-semibold tracking-wide text-white shadow backdrop-blur">
-            <ExternalLink size={12} aria-hidden="true" />
-            EXTERNAL
+          <span className="absolute left-2 top-2 rounded border border-white/10 bg-black/70 px-1.5 py-0.5 shadow backdrop-blur">
+            <svg
+              role="img"
+              aria-label="Prime Video"
+              className="h-5 w-11 opacity-90"
+              viewBox="0 0 72 32"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <text x="1" y="14" fill="white" fontSize="15" fontWeight="700" letterSpacing="-.6">prime</text>
+              <text x="1" y="28" fill="white" fontSize="12" fontWeight="600" letterSpacing="-.2">video</text>
+              <path d="M34 25c9 4 21 3 31-3m-5 0 5 0-2 4" fill="none" stroke="#00a8e0" strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.8" />
+            </svg>
           </span>
         )}
       </div>
