@@ -1,7 +1,6 @@
 import {
   Captions,
   FastForward,
-  Maximize,
   Pause,
   Play,
   Rewind,
@@ -127,6 +126,7 @@ function VideoPlayer({
   playbackPositionRef,
   onPlaybackEnded,
   onRestartPlayback,
+  onReturnToPreview,
   upNext,
   upNextCountdown,
   onStartNext,
@@ -360,23 +360,11 @@ function VideoPlayer({
               <button
                 type="button"
                 tabIndex={controlsVisible ? 0 : -1}
-                aria-label="Exit fullscreen"
-                onClick={() => {
-                  if (isFullscreen) {
-                    document.exitFullscreen().catch(() => {
-                      setError('Could not exit fullscreen.')
-                    })
-                  } else {
-                    playerContainerRef.current
-                      ?.requestFullscreen()
-                      .catch(() => {
-                        setError('Could not enter fullscreen.')
-                      })
-                  }
-                }}
+                aria-label="Back to preview"
+                onClick={onReturnToPreview}
                 className="rounded-full p-2 transition hover:bg-white/15"
               >
-                {isFullscreen ? <X size={20} /> : <Maximize size={20} />}
+                <X size={20} />
               </button>
             </div>
           </div>

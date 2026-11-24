@@ -92,7 +92,6 @@ function Home({ onLogout }) {
     audioTracks,
     changePlaybackTrack,
     canResume,
-    hasSavedProgress,
     clearSelection,
     controlsVisible,
     currentTime,
@@ -170,11 +169,6 @@ function Home({ onLogout }) {
       return
     }
     if (isFullscreen || isFullPlayback) {
-      if (isFullscreen) {
-        document.exitFullscreen().catch(() => {
-          setError('Could not exit fullscreen.')
-        })
-      }
       returnToPreview()
       return
     }
@@ -206,7 +200,6 @@ function Home({ onLogout }) {
     selectedMovie,
     selectedPerson,
     selectedRated,
-    setError,
     setShowExitConfirmation,
     showExitConfirmation,
   ])
@@ -310,11 +303,6 @@ function Home({ onLogout }) {
     const handleHistoryBack = () => {
       if (isFullscreen || isFullPlayback) {
         notifyNativeHistory(Boolean(window.history.state?.cinelodeView))
-        if (isFullscreen) {
-          document.exitFullscreen().catch(() => {
-            setError('Could not exit fullscreen.')
-          })
-        }
         returnToPreview()
         return
       }
@@ -328,7 +316,6 @@ function Home({ onLogout }) {
     isFullscreen,
     resetToInitialView,
     returnToPreview,
-    setError,
   ])
   useEffect(() => {
     const controller = new AbortController()
@@ -764,6 +751,7 @@ function Home({ onLogout }) {
               playbackPositionRef={playbackPositionRef}
               onPlaybackEnded={handlePlaybackEnded}
               onRestartPlayback={handleRestartPlayback}
+              onReturnToPreview={returnToPreview}
               upNext={upNext}
               upNextCountdown={upNextCountdown}
               onStartNext={() => startNextPlayback(upNext)}
@@ -783,7 +771,6 @@ function Home({ onLogout }) {
                 onStartPlayback={handleStartPlayback}
                 onRestartPlayback={handleRestartPlayback}
                 canResume={canResume}
-                hasSavedProgress={hasSavedProgress}
               />
             </div>
           </>

@@ -162,6 +162,55 @@ describe('App', () => {
       expect(mockOpenURL).toHaveBeenCalledWith('https://example.com/watch');
     });
 
+    it('uses the current trusted page when the message event has no URL', () => {
+      mockOpenURL.mockResolvedValue(undefined);
+      const screen = render(<App />);
+      fireEvent(screen.getByTestId('cinelode-webview'), 'message', {
+        nativeEvent: {
+          data: JSON.stringify({
+            type: 'cinelode-open-external',
+            url: 'https://example.com/watch',
+          }),
+        },
+      });
+      expect(mockOpenURL).toHaveBeenCalledWith(
+        'https://example.com/watch',
+      );
+    });
+
+    it('passes Amazon Video detail links to the device unchanged', () => {
+      mockOpenURL.mockResolvedValue(undefined);
+      const screen = render(<App />);
+      fireEvent(screen.getByTestId('cinelode-webview'), 'message', {
+        nativeEvent: {
+          data: JSON.stringify({
+            type: 'cinelode-open-external',
+            url: 'https://www.amazon.de/gp/video/detail/B0H8PGRYZ9',
+          }),
+        },
+      });
+      expect(mockOpenURL).toHaveBeenCalledWith(
+        'https://www.amazon.de/gp/video/detail/B0H8PGRYZ9',
+      );
+    });
+
+    it('rejects a message without a URL after navigating away from the frontend', () => {
+      const screen = render(<App />);
+      const webview = screen.getByTestId('cinelode-webview');
+      fireEvent(webview, 'loadStart', {
+        nativeEvent: {url: 'https://attacker.example/page'},
+      });
+      fireEvent(webview, 'message', {
+        nativeEvent: {
+          data: JSON.stringify({
+            type: 'cinelode-open-external',
+            url: 'https://www.amazon.de/gp/video/detail/B0H8PGRYZ9',
+          }),
+        },
+      });
+      expect(mockOpenURL).not.toHaveBeenCalled();
+    });
+
     it('rejects external requests from untrusted pages and unsafe schemes', () => {
       const screen = render(<App />);
       const webview = screen.getByTestId('cinelode-webview');

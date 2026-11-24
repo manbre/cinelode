@@ -27,6 +27,7 @@ export const App = () => {
   const webViewUrl = useRef(
     `${config.frontendUrl}?cinelodeLaunch=${Date.now()}`,
   ).current;
+  const currentWebViewUrl = useRef(webViewUrl);
   const validUrl = isValidFrontendUrl(config.frontendUrl);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
     validUrl ? 'loading' : 'error',
@@ -141,7 +142,8 @@ export const App = () => {
           mediaPlaybackRequiresUserAction={false}
           mixedContentMode="never"
           source={{uri: webViewUrl}}
-          onLoadStart={() => {
+          onLoadStart={({nativeEvent}) => {
+            currentWebViewUrl.current = nativeEvent.url;
             webPlayerIsFullscreen.current = false;
             loadFailed.current = false;
             if (loadingOverlayTimer.current) {
@@ -215,7 +217,8 @@ export const App = () => {
                 'url' in parsedMessage &&
                 typeof parsedMessage.url === 'string'
               ) {
-                if (!isFrontendPage(nativeEvent.url)) {
+                const messageUrl = nativeEvent.url || currentWebViewUrl.current;
+                if (!isFrontendPage(messageUrl)) {
                   console.warn('Cinelode: external link request from untrusted page');
                   return;
                 }
