@@ -11,6 +11,7 @@ import {
   getInitialLibrarySelection,
   getNextPlaybackSelection,
 } from '../utils/catalog'
+import { isNativeWebView } from '../utils/runtime'
 import { openExternalMovie } from '../utils/externalPlayback'
 const MOVIES_API = '/api/movies'
 function notifyNativeHistory(canGoBack) {
@@ -336,13 +337,16 @@ function Home({ onLogout }) {
           seriesResponse.json(),
         ])
         const loadedMovies = Array.isArray(movieData) ? movieData : []
-        setMovies(loadedMovies)
+        const availableMovies = isNativeWebView()
+          ? loadedMovies.filter((movie) => movie.source !== 'EXTERNAL')
+          : loadedMovies
+        setMovies(availableMovies)
         setSeriesSeasons(
           Array.isArray(seriesData)
             ? seriesData.map((season) => ({ ...season, source: 'SERIES' }))
             : [],
         )
-        const firstLocalMovie = getInitialLibrarySelection(loadedMovies)
+        const firstLocalMovie = getInitialLibrarySelection(availableMovies)
         if (firstLocalMovie) {
           selectContent(firstLocalMovie)
           setSelectedMovie(firstLocalMovie)
