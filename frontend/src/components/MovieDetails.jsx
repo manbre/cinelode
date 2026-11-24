@@ -141,7 +141,7 @@ function MovieDetails({
       )}
 
       <div className="pb-2 pt-6 pl-3 pr-5 sm:pl-4 sm:pr-7 lg:pl-5 lg:pr-4">
-        <div className="space-y-8">
+        <div className="space-y-6">
           <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-white/75">
             <div className="-ml-1 flex shrink-0 items-center gap-3">
               <button
