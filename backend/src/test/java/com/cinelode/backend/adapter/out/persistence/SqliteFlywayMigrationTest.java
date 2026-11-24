@@ -40,55 +40,11 @@ class SqliteFlywayMigrationTest {
                             AND name <> 'flyway_schema_history'
                         ORDER BY name
                         """, String.class));
-        assertEquals("2", flyway.info().current().getVersion().getVersion());
-        assertEquals("ok", jdbc.queryForObject("PRAGMA integrity_check", String.class));
-        assertEquals(0, jdbc.queryForList("PRAGMA foreign_key_check").size());
-    }
-
-    @Test
-    void preservesLegacyRowsAndCreatesMissingTables() {
-        DataSource dataSource = dataSource("legacy.sqlite");
-        JdbcTemplate jdbc = new JdbcTemplate(dataSource);
-        jdbc.execute("""
-                CREATE TABLE movies (
-                    id INTEGER PRIMARY KEY,
-                    title TEXT NOT NULL,
-                    year INTEGER,
-                    file_path TEXT NOT NULL UNIQUE,
-                    group_name TEXT,
-                    genre TEXT,
-                    director TEXT,
-                    actors TEXT,
-                    plot TEXT,
-                    writer TEXT,
-                    rated TEXT,
-                    imdb_rating REAL,
-                    oscar_count INTEGER,
-                    metadata_status TEXT
-                )
-                """);
-        jdbc.update("""
-                INSERT INTO movies(id, title, year, file_path, group_name, oscar_count, metadata_status)
-                VALUES (7, 'Example', 2024, '/movies/example.mkv', 'Example Franchise', 2, 'COMPLETE')
-                """);
-
-        flyway(dataSource).migrate();
-
-        assertEquals("Example Franchise",
-                jdbc.queryForObject("SELECT franchise FROM movies WHERE id=7", String.class));
-        assertEquals(2,
-                jdbc.queryForObject("SELECT oscar_wins FROM movies WHERE id=7", Integer.class));
-        assertEquals("Example",
-                jdbc.queryForObject("SELECT title FROM movies WHERE id=7", String.class));
+        assertEquals("1", flyway.info().current().getVersion().getVersion());
         assertEquals(1, jdbc.queryForObject(
-                "SELECT COUNT(*) FROM pragma_table_info('movies') WHERE name='runtime'", Integer.class));
-        assertEquals(List.of("episodes", "movies", "seasons", "series"),
-                jdbc.queryForList("""
-                        SELECT name FROM sqlite_master
-                        WHERE type='table' AND name NOT LIKE 'sqlite_%'
-                            AND name <> 'flyway_schema_history'
-                        ORDER BY name
-                        """, String.class));
+                "SELECT COUNT(*) FROM pragma_table_info('movies') WHERE name='playback_position'", Integer.class));
+        assertEquals(1, jdbc.queryForObject(
+                "SELECT COUNT(*) FROM pragma_table_info('episodes') WHERE name='playback_position'", Integer.class));
         assertEquals("ok", jdbc.queryForObject("PRAGMA integrity_check", String.class));
         assertEquals(0, jdbc.queryForList("PRAGMA foreign_key_check").size());
     }
@@ -153,7 +109,7 @@ class SqliteFlywayMigrationTest {
                 .migrate(flyway);
 
         JdbcTemplate jdbc = new JdbcTemplate(dataSource);
-        assertEquals("2", flyway.info().current().getVersion().getVersion());
+        assertEquals("1", flyway.info().current().getVersion().getVersion());
         assertEquals("ok", jdbc.queryForObject("PRAGMA integrity_check", String.class));
         assertEquals(0, jdbc.queryForList("PRAGMA foreign_key_check").size());
         try (var backups = Files.list(backupDirectory)) {

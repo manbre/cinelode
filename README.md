@@ -267,10 +267,13 @@ for the bundled intro. Keep media libraries outside the repository and review
 the files staged for every commit; ignore rules do not cover every format and
 do not remove files already tracked.
 
-SQLite schema changes are versioned with Flyway. Before applying pending
-migrations, Cinelode creates a SQLite-consistent backup and verifies database
-and foreign-key integrity. Migration testing must use a separate database copy;
-do not point rehearsal commands at the user's live database.
+The Flyway baseline defines the complete SQLite schema, including playback
+positions for movies and episodes. Existing database files are not migrated to
+this rebuilt baseline; the catalog is recreated from the configured media
+directories on startup. Before applying pending migrations, Cinelode creates a
+SQLite-consistent backup and verifies database and foreign-key integrity.
+Migration testing must use a separate database copy; do not point rehearsal
+commands at the user's live database.
 
 Relevant environment properties (defaults are shown in
 `backend/src/main/resources/application.properties`):

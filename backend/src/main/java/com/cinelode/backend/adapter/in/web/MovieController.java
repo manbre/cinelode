@@ -8,6 +8,9 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import com.cinelode.backend.application.port.MovieRepository;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -23,17 +26,29 @@ public class MovieController {
 
     private final ListMovies listMovies;
     private final GetMovie getMovie;
+    private final MovieRepository repository;
 
-    public MovieController(ListMovies listMovies, GetMovie getMovie) {
+    public MovieController(ListMovies listMovies, GetMovie getMovie, MovieRepository repository) {
         this.listMovies = listMovies;
         this.getMovie = getMovie;
+        this.repository = repository;
+    }
+
+    public record PlaybackPosition(double position) {}
+
+    @PostMapping("/{id}/progress")
+    public ResponseEntity<Void> saveProgress(@PathVariable long id, @RequestBody PlaybackPosition body) {
+        if (!Double.isFinite(body.position()) || body.position() < 0) return ResponseEntity.badRequest().build();
+        if (getMovie.execute(id).isEmpty()) return ResponseEntity.notFound().build();
+        repository.savePlaybackPosition(id, body.position());
+        return ResponseEntity.noContent().build();
     }
 
     public record MovieDto(Long id, String title, Integer year, String franchise,
             String genre, String director, String actors, String plot, String runtime, String writer,
             String rated, Double imdbRating, Integer oscarWins, String metadataStatus,
             String franchiseNumber, String source,
-            String posterUrl, String playbackUrl) {}
+            String posterUrl, String playbackUrl, double playbackPosition) {}
 
     @GetMapping
     public List<MovieDto> list() {
@@ -58,7 +73,7 @@ public class MovieController {
                 external ? "EXTERNAL" : "LOCAL",
                 "/api/movies/" + movie.id() + "/poster",
                 external ? "/api/movies/" + movie.id() + "/external-url"
-                        : "/api/movies/" + movie.id() + "/stream");
+                        : "/api/movies/" + movie.id() + "/stream", movie.playbackPosition());
     }
 
     private static String franchiseNumber(String filePath) {

@@ -29,4 +29,6 @@ public interface MovieRepository {
 
     /** Saves fetched metadata for a movie. */
     void saveMetadata(long id, MovieMetadata metadata);
+
+    void savePlaybackPosition(long id, double position);
 }

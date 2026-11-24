@@ -30,7 +30,7 @@ public class SeriesController {
         this.catalog = catalog;
     }
 
-    public record EpisodeDto(long id, int episodeNumber) {}
+    public record EpisodeDto(long id, int episodeNumber, double playbackPosition) {}
 
     public record SeasonDto(
             long id,
@@ -77,7 +77,7 @@ public class SeriesController {
 
     private static SeasonDto toDto(Series series, SeriesSeason season) {
         List<EpisodeDto> episodes = season.episodes().stream()
-                .map(episode -> new EpisodeDto(episode.id(), episode.episodeNumber()))
+                .map(episode -> new EpisodeDto(episode.id(), episode.episodeNumber(), episode.playbackPosition()))
                 .toList();
         return new SeasonDto(
                 season.id(),

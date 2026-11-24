@@ -243,6 +243,10 @@ class SynchronizeLibraryTest {
             savedMetadata = metadata;
             completedMovieIds.add(id);
         }
+
+        @Override
+        public void savePlaybackPosition(long id, double position) {
+        }
     }
 
     private static final class FakeMetadataProvider implements MovieMetadataProvider {

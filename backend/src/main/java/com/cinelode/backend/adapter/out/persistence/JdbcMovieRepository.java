@@ -34,7 +34,8 @@ public class JdbcMovieRepository implements MovieRepository {
             decodeMetadata(rs.getString("rated")),
             (Double) rs.getObject("imdb_rating"),
             (Integer) rs.getObject("oscar_wins"),
-            rs.getString("metadata_status") == null ? null : MetadataStatus.valueOf(rs.getString("metadata_status")));
+            rs.getString("metadata_status") == null ? null : MetadataStatus.valueOf(rs.getString("metadata_status")),
+            rs.getDouble("playback_position"));
 
     private final JdbcTemplate jdbc;
     private final TransactionTemplate transactions;
@@ -123,6 +124,11 @@ public class JdbcMovieRepository implements MovieRepository {
                 """, valid(metadata.genre()), valid(metadata.director()),
                 valid(metadata.actors()), valid(metadata.plot()), valid(metadata.runtime()), valid(metadata.writer()),
                 valid(metadata.rated()), metadata.imdbRating(), metadata.oscarWins(), id);
+    }
+
+    @Override
+    public void savePlaybackPosition(long id, double position) {
+        jdbc.update("UPDATE movies SET playback_position=? WHERE id=?", position, id);
     }
 
     /** Converts missing or unavailable provider values to null. */

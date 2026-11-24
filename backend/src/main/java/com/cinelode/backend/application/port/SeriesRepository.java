@@ -19,6 +19,8 @@ public interface SeriesRepository {
 
     Optional<SeriesEpisode> findEpisodeById(long id);
 
+    void savePlaybackPosition(long episodeId, double position);
+
     Optional<String> findSeasonPosterPath(long seasonId);
 
     void saveMetadata(long seriesId, SeriesMetadata metadata);

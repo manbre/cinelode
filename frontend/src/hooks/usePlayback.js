@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { buildPlaybackUrl, getPlaybackBase } from '../utils/playback'
 import { isNativeWebView } from '../utils/runtime'
+import { postJson } from '../utils/auth'
 
 export function usePlayback({ selectedMovie, setError }) {
   const [previewIteration, setPreviewIteration] = useState(0)
@@ -13,6 +14,8 @@ export function usePlayback({ selectedMovie, setError }) {
   const [playbackStart, setPlaybackStart] = useState(0)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
+  const [canResume, setCanResume] = useState(false)
+  const [progressRevision, setProgressRevision] = useState(0)
   const [volume, setVolume] = useState(1)
   const [isPlaying, setIsPlaying] = useState(false)
   const [controlsVisible, setControlsVisible] = useState(true)
@@ -23,8 +26,37 @@ export function usePlayback({ selectedMovie, setError }) {
   const selectedMovieRef = useRef(null)
   const controlsTimeoutRef = useRef(null)
   const playbackPositionRef = useRef(0)
+  const savedPositionsRef = useRef(new Map())
   const previewTransitionTimeoutRef = useRef(null)
   const previewTransitioningRef = useRef(false)
+
+  const persistProgress = useCallback((movie, position) => {
+    if (!movie || movie.source === 'EXTERNAL' || !Number.isFinite(position) || position < 0) {
+      return
+    }
+    const key = movie.source === 'SERIES' ? `episode:${movie.episodeId}` : `movie:${movie.id}`
+    if (savedPositionsRef.current.get(key) === position) {
+      return
+    }
+    savedPositionsRef.current.set(key, position)
+    setProgressRevision((revision) => revision + 1)
+    const progressUrl = movie.source === 'SERIES'
+      ? `/api/series/episodes/${movie.episodeId}/progress`
+      : `/api/movies/${movie.id}/progress`
+    postJson(progressUrl, { position })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Playback position could not be saved.')
+        }
+      })
+      .catch(() => {
+        if (savedPositionsRef.current.get(key) === position) {
+          savedPositionsRef.current.delete(key)
+          setProgressRevision((revision) => revision + 1)
+        }
+        setError('Playback position could not be saved.')
+      })
+  }, [setError])
 
   const audioTracks = useMemo(
     () => tracks.filter((track) => track.type === 'audio'),
@@ -88,9 +120,49 @@ export function usePlayback({ selectedMovie, setError }) {
   }, [setError])
 
   const returnToPreview = useCallback(() => {
+    persistProgress(selectedMovieRef.current, playbackPositionRef.current)
     setIsFullPlayback(false)
     setKeepPlaybackStream(true)
-  }, [])
+  }, [persistProgress])
+
+  useEffect(() => {
+    setCanResume(false)
+    if (!selectedMovie || selectedMovie.source === 'EXTERNAL') {
+      return undefined
+    }
+
+    const savedPosition = selectedMovie.source === 'SERIES'
+      ? selectedMovie.episodes?.find((episode) => episode.id === selectedMovie.episodeId)?.playbackPosition
+      : selectedMovie.playbackPosition
+    const key = selectedMovie.source === 'SERIES'
+      ? `episode:${selectedMovie.episodeId}`
+      : `movie:${selectedMovie.id}`
+    const position = Math.max(savedPosition ?? 0, savedPositionsRef.current.get(key) ?? 0)
+    if (position < 300) {
+      return undefined
+    }
+
+    const controller = new AbortController()
+    fetch(`${getPlaybackBase(selectedMovie)}/duration`, { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error('Duration could not be loaded.')
+        }
+        return response.json()
+      })
+      .then((mediaDuration) => {
+        if (Number.isFinite(mediaDuration) && mediaDuration - position >= 300) {
+          setCanResume(true)
+        }
+      })
+      .catch((cause) => {
+        if (cause.name !== 'AbortError') {
+          setCanResume(false)
+        }
+      })
+
+    return () => controller.abort()
+  }, [selectedMovie, progressRevision])
 
   const showPlayerControls = useCallback(() => {
     if (!isFullPlayback) {
@@ -121,15 +193,36 @@ export function usePlayback({ selectedMovie, setError }) {
     }, 350)
   }, [isFullPlayback])
 
-  const startPlayback = useCallback(() => {
+  const startPlayback = useCallback((restart = false) => {
     setError('')
-    if (!isFullPlayback) {
-      setKeepPlaybackStream(true)
-      setPlaybackStart(0)
+    if (restart && isFullPlayback) {
       playbackPositionRef.current = 0
+      setCurrentTime(0)
+      if (playbackStart === 0 && videoRef.current) {
+        videoRef.current.currentTime = 0
+        videoRef.current.play().catch(() => {
+          setError('Playback could not be started.')
+        })
+      } else {
+        setPlaybackStart(0)
+      }
+    } else if (!isFullPlayback) {
+      setKeepPlaybackStream(true)
+      const serverPosition = selectedMovie?.source === 'SERIES'
+        ? selectedMovie.episodes?.find((episode) => episode.id === selectedMovie.episodeId)?.playbackPosition
+        : selectedMovie?.playbackPosition
+      const key = selectedMovie?.source === 'SERIES'
+        ? `episode:${selectedMovie.episodeId}`
+        : `movie:${selectedMovie?.id}`
+      const savedPosition = Math.max(serverPosition ?? 0, savedPositionsRef.current.get(key) ?? 0)
+      const resumePosition = !restart && canResume && Number.isFinite(savedPosition)
+        ? savedPosition
+        : 0
+      setPlaybackStart(resumePosition)
+      playbackPositionRef.current = resumePosition
       setSelectedAudioTrack('')
       setSelectedSubtitleTrack('')
-      setCurrentTime(0)
+      setCurrentTime(resumePosition)
       setDuration(0)
       setTracks([])
       setIsFullPlayback(true)
@@ -143,7 +236,7 @@ export function usePlayback({ selectedMovie, setError }) {
       setError('Fullscreen is not supported by this browser.')
     }
     showPlayerControls()
-  }, [isFullPlayback, setError, showPlayerControls])
+  }, [canResume, isFullPlayback, playbackStart, selectedMovie, setError, showPlayerControls])
 
   useEffect(() => {
     if (!isFullPlayback || !selectedMovie || selectedMovie.source === 'EXTERNAL') {
@@ -216,12 +309,18 @@ export function usePlayback({ selectedMovie, setError }) {
   }, [])
 
   useEffect(() => {
+    let wasFullscreen = document.fullscreenElement === playerContainerRef.current
     const updateFullscreen = () => {
-      setIsFullscreen(document.fullscreenElement === playerContainerRef.current)
+      const fullscreen = document.fullscreenElement === playerContainerRef.current
+      if (wasFullscreen && !fullscreen) {
+        persistProgress(selectedMovieRef.current, playbackPositionRef.current)
+      }
+      wasFullscreen = fullscreen
+      setIsFullscreen(fullscreen)
     }
     document.addEventListener('fullscreenchange', updateFullscreen)
     return () => document.removeEventListener('fullscreenchange', updateFullscreen)
-  }, [])
+  }, [persistProgress])
 
   const setSubtitleTrack = useCallback((trackIndex) => {
     setPlaybackStart(playbackPositionRef.current)
@@ -241,6 +340,7 @@ export function usePlayback({ selectedMovie, setError }) {
 
   return {
     audioTracks,
+    canResume,
     changePlaybackTrack,
     clearSelection,
     controlsVisible,

@@ -88,6 +88,7 @@ function Home({ onLogout }) {
   const {
     audioTracks,
     changePlaybackTrack,
+    canResume,
     clearSelection,
     controlsVisible,
     currentTime,
@@ -484,6 +485,11 @@ function Home({ onLogout }) {
       setError(cause.message || 'The external movie could not be opened.'),
     )
   }, [selectedMovie, setError, startPlayback])
+  const handleRestartPlayback = useCallback(() => {
+    if (selectedMovie?.source !== 'EXTERNAL') {
+      startPlayback(true)
+    }
+  }, [selectedMovie, startPlayback])
   useEffect(() => {
     const onExternalOpenError = () =>
       setError('The external link could not be opened on this device.')
@@ -668,6 +674,7 @@ function Home({ onLogout }) {
               setSubtitleTrack={setSubtitleTrack}
               playbackPositionRef={playbackPositionRef}
               onPlaybackEnded={handlePlaybackEnded}
+              onRestartPlayback={handleRestartPlayback}
             />
             <div className="movie-info min-h-0 lg:overflow-y-auto">
               <MovieDetails
@@ -681,6 +688,8 @@ function Home({ onLogout }) {
                 setSelectedRated={setSelectedRated}
                 ratedMovieCounts={ratedMovieCounts}
                 onStartPlayback={handleStartPlayback}
+                onRestartPlayback={handleRestartPlayback}
+                canResume={canResume}
               />
             </div>
           </>

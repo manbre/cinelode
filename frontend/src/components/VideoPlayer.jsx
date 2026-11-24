@@ -5,6 +5,7 @@ import {
   Pause,
   Play,
   Rewind,
+  RotateCcw,
   Volume2,
   X,
 } from 'lucide-react'
@@ -125,6 +126,7 @@ function VideoPlayer({
   setSubtitleTrack,
   playbackPositionRef,
   onPlaybackEnded,
+  onRestartPlayback,
 }) {
   const useVegaPreview = !isFullPlayback && isNativeWebView()
   return (
@@ -262,6 +264,16 @@ function VideoPlayer({
                 ) : (
                   <Play size={22} fill="currentColor" />
                 )}
+              </button>
+              <button
+                type="button"
+                tabIndex={controlsVisible ? 0 : -1}
+                aria-label="Restart from beginning"
+                title="Restart from beginning"
+                onClick={onRestartPlayback}
+                className="rounded-full p-2 transition hover:bg-white/15"
+              >
+                <RotateCcw size={22} />
               </button>
               <button
                 type="button"

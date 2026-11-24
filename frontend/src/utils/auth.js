@@ -14,6 +14,19 @@ async function getCsrfToken(fetchImpl, signal) {
   return csrf
 }
 
+export async function postJson(url, body, fetchImpl = fetch) {
+  const csrf = await getCsrfToken(fetchImpl)
+  return fetchImpl(url, {
+    method: 'POST',
+    credentials: 'same-origin',
+    headers: {
+      'Content-Type': 'application/json',
+      [csrf.headerName]: csrf.token,
+    },
+    body: JSON.stringify(body),
+  })
+}
+
 export async function getSession(fetchImpl = fetch, signal) {
   const response = await fetchImpl('/api/auth/session', {
     credentials: 'same-origin',

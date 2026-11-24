@@ -1,5 +1,5 @@
 import { useLayoutEffect, useRef, useState } from 'react'
-import { Play, Star } from 'lucide-react'
+import { Play, RotateCcw, Star } from 'lucide-react'
 import AwardWins from './AwardWins'
 import { getPeople, normalizePersonName } from '../utils/catalog'
 
@@ -83,6 +83,8 @@ function MovieDetails({
   setSelectedRated,
   ratedMovieCounts,
   onStartPlayback,
+  onRestartPlayback,
+  canResume,
 }) {
   const renderPeople = (value, role) => getPeople({ [role]: value }, role)
     .map((name) => {
@@ -140,55 +142,79 @@ function MovieDetails({
 
       <div className="pb-2 pt-6 pl-3 pr-5 sm:pl-4 sm:pr-7 lg:pl-5 lg:pr-4">
         <div className="space-y-8">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-3 text-sm text-white/75">
-            <span className="inline-flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
-              {selectedMovie.imdbRating != null && (
-                <span className="inline-flex items-center gap-1 px-2 py-1">
-                  <Star size={12} fill="currentColor" />
-                  {selectedMovie.imdbRating.toFixed(1)}
-                </span>
+          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-white/75">
+            <div className="-ml-1 flex shrink-0 items-center gap-3">
+              <button
+                type="button"
+                onClick={onStartPlayback}
+                className="inline-flex w-32 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-accent bg-accent px-6 py-2.5 text-sm font-semibold text-black transition hover:border-accent-hover hover:bg-accent-hover"
+              >
+                <Play size={14} fill="currentColor" />
+                {canResume ? 'Resume' : 'Play'}
+              </button>
+              <button
+                type="button"
+                aria-label="Restart from beginning"
+                title="Restart from beginning"
+                aria-hidden={!canResume}
+                tabIndex={canResume ? 0 : -1}
+                onClick={onRestartPlayback}
+                className={`inline-flex size-10 items-center justify-center rounded-md border border-white/20 text-white transition hover:border-white/40 hover:bg-white/10 ${
+                  canResume ? '' : 'invisible pointer-events-none'
+                }`}
+              >
+                <RotateCcw size={16} />
+              </button>
+            </div>
+            <div className="flex min-w-0 flex-col gap-y-1 text-sm text-white/75">
+              {(selectedMovie.imdbRating != null || selectedMovie.year
+                || selectedMovie.oscarWins || selectedMovie.primetimeEmmyWins) && (
+                <div className="flex flex-wrap items-center gap-x-4">
+                  {selectedMovie.imdbRating != null && (
+                    <span className="inline-flex items-center gap-1">
+                      <Star size={12} fill="currentColor" />
+                      {selectedMovie.imdbRating.toFixed(1)}
+                    </span>
+                  )}
+                  {selectedMovie.year && <span>{selectedMovie.year}</span>}
+                  <AwardWins content={selectedMovie} />
+                </div>
               )}
-              {selectedMovie.year && <span>{selectedMovie.year}</span>}
-              {selectedMovie.genre && <span>{selectedMovie.genre}</span>}
-              {selectedMovie.runtime && <span>{selectedMovie.runtime}</span>}
-              {selectedMovie.rated && (selectedMovie.source === 'SERIES' ? (
-                <span className="rounded border border-white/20 px-1.5">{selectedMovie.rated}</span>
-              ) : (() => {
-                  const rated = selectedMovie.rated.trim()
-                  const ratedKey = rated.normalize('NFC').toLocaleLowerCase('de')
-                  const isFilterable = (ratedMovieCounts.get(ratedKey) ?? 0) > 1
-                  const isSelected = selectedRated === ratedKey
-                  return isFilterable ? (
-                    <button
-                      type="button"
-                      aria-pressed={isSelected}
-                      onClick={() => {
-                        setSelectedGenre('')
-                        setSelectedPerson('')
-                        setSelectedRated((current) => current === ratedKey ? '' : ratedKey)
-                      }}
-                      className={`inline-flex items-center rounded-full border px-4 py-0.5 transition ${
-                        isSelected
-                          ? 'border-accent bg-accent text-black'
-                          : 'border-white/20 bg-white/[0.04] hover:border-white/25 hover:bg-white/10 hover:text-white'
-                      }`}
-                    >
-                      {selectedMovie.rated}
-                    </button>
-                  ) : (
+              {(selectedMovie.genre || selectedMovie.runtime || selectedMovie.rated) && (
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                  {selectedMovie.genre && <span>{selectedMovie.genre}</span>}
+                  {selectedMovie.runtime && <span>{selectedMovie.runtime}</span>}
+                  {selectedMovie.rated && (selectedMovie.source === 'SERIES' ? (
                     <span className="rounded border border-white/20 px-1.5">{selectedMovie.rated}</span>
-                  )
-                })())}
-              <AwardWins content={selectedMovie} />
-            </span>
-            <button
-              type="button"
-              onClick={onStartPlayback}
-              className="order-first mr-3 inline-flex items-center gap-2 whitespace-nowrap rounded-md border border-accent bg-accent px-6 py-2.5 text-sm font-semibold text-black transition hover:border-accent-hover hover:bg-accent-hover"
-            >
-              <Play size={14} fill="currentColor" />
-              Play
-            </button>
+                  ) : (() => {
+                      const rated = selectedMovie.rated.trim()
+                      const ratedKey = rated.normalize('NFC').toLocaleLowerCase('de')
+                      const isFilterable = (ratedMovieCounts.get(ratedKey) ?? 0) > 1
+                      const isSelected = selectedRated === ratedKey
+                      return isFilterable ? (
+                        <button
+                          type="button"
+                          aria-pressed={isSelected}
+                          onClick={() => {
+                            setSelectedGenre('')
+                            setSelectedPerson('')
+                            setSelectedRated((current) => current === ratedKey ? '' : ratedKey)
+                          }}
+                          className={`inline-flex items-center rounded-full border px-4 py-0.5 transition ${
+                            isSelected
+                              ? 'border-accent bg-accent text-black'
+                              : 'border-white/20 bg-white/[0.04] hover:border-white/25 hover:bg-white/10 hover:text-white'
+                          }`}
+                        >
+                          {selectedMovie.rated}
+                        </button>
+                      ) : (
+                        <span className="rounded border border-white/20 px-1.5">{selectedMovie.rated}</span>
+                      )
+                    })())}
+                </div>
+              )}
+            </div>
           </div>
           <div className={`grid ${
             selectedMovie.director || selectedMovie.actors || selectedMovie.writer

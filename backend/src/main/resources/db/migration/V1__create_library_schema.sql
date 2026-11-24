@@ -13,7 +13,8 @@ CREATE TABLE IF NOT EXISTS movies (
     rated TEXT,
     imdb_rating REAL,
     oscar_wins INTEGER,
-    metadata_status TEXT
+    metadata_status TEXT,
+    playback_position REAL NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS series (
@@ -45,5 +46,6 @@ CREATE TABLE IF NOT EXISTS episodes (
     season_id INTEGER NOT NULL REFERENCES seasons(id),
     episode_number INTEGER NOT NULL,
     file_path TEXT NOT NULL UNIQUE,
+    playback_position REAL NOT NULL DEFAULT 0,
     UNIQUE(season_id, episode_number)
 );

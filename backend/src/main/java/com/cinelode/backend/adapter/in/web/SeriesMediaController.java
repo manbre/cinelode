@@ -12,6 +12,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody;
 
 import java.nio.file.Path;
@@ -36,6 +38,16 @@ public class SeriesMediaController {
         this.catalog = catalog;
         this.ffprobeService = ffprobeService;
         this.ffmpegPlaybackService = ffmpegPlaybackService;
+    }
+
+    public record PlaybackPosition(double position) {}
+
+    @PostMapping("/{id}/progress")
+    public ResponseEntity<Void> saveProgress(@PathVariable long id, @RequestBody PlaybackPosition body) {
+        if (!Double.isFinite(body.position()) || body.position() < 0) return ResponseEntity.badRequest().build();
+        if (repository.findEpisodeById(id).isEmpty()) return ResponseEntity.notFound().build();
+        repository.savePlaybackPosition(id, body.position());
+        return ResponseEntity.noContent().build();
     }
 
     @GetMapping("/{id}/tracks")

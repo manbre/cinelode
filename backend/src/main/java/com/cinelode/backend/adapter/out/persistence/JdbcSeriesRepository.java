@@ -31,7 +31,8 @@ public class JdbcSeriesRepository implements SeriesRepository {
     private static final RowMapper<SeriesEpisode> EPISODE_MAPPER = (rs, row) -> new SeriesEpisode(
             rs.getLong("id"),
             rs.getInt("episode_number"),
-            rs.getString("file_path"));
+            rs.getString("file_path"),
+            rs.getDouble("playback_position"));
 
     private final JdbcTemplate jdbc;
     private final TransactionTemplate transactions;
@@ -64,7 +65,8 @@ public class JdbcSeriesRepository implements SeriesRepository {
                        season.poster_path,
                        episode.id AS episode_id,
                        episode.episode_number,
-                       episode.file_path AS episode_file_path
+                       episode.file_path AS episode_file_path,
+                       episode.playback_position AS episode_playback_position
                 FROM series s
                 LEFT JOIN seasons season ON season.series_id=s.id
                 LEFT JOIN episodes episode ON episode.season_id=season.id
@@ -96,7 +98,8 @@ public class JdbcSeriesRepository implements SeriesRepository {
                         season.episodes.add(new SeriesEpisode(
                                 ((Number) episodeIdValue).longValue(),
                                 resultSet.getInt("episode_number"),
-                                resultSet.getString("episode_file_path")));
+                                resultSet.getString("episode_file_path"),
+                                resultSet.getDouble("episode_playback_position")));
                     }
                 }
                 rowNumber++;
@@ -119,8 +122,13 @@ public class JdbcSeriesRepository implements SeriesRepository {
     @Override
     public Optional<SeriesEpisode> findEpisodeById(long id) {
         return jdbc.query("""
-                SELECT id, episode_number, file_path FROM episodes WHERE id=?
+                SELECT id, episode_number, file_path, playback_position FROM episodes WHERE id=?
                 """, EPISODE_MAPPER, id).stream().findFirst();
+    }
+
+    @Override
+    public void savePlaybackPosition(long episodeId, double position) {
+        jdbc.update("UPDATE episodes SET playback_position=? WHERE id=?", position, episodeId);
     }
 
     @Override
@@ -225,7 +233,7 @@ public class JdbcSeriesRepository implements SeriesRepository {
         }
 
         List<SeriesEpisode> existingEpisodes = jdbc.query("""
-                SELECT id, episode_number, file_path FROM episodes WHERE season_id=?
+                SELECT id, episode_number, file_path, playback_position FROM episodes WHERE season_id=?
                 """, EPISODE_MAPPER, seasonId);
         for (SeriesEpisode episode : existingEpisodes) {
             if (!episodeNumbers.contains(episode.episodeNumber())) {
