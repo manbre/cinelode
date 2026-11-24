@@ -27,23 +27,27 @@ export function usePlayback({ selectedMovie, setError }) {
   const controlsTimeoutRef = useRef(null)
   const playbackPositionRef = useRef(0)
   const savedPositionsRef = useRef(new Map())
+  const progressRequestsRef = useRef(new Map())
   const previewTransitionTimeoutRef = useRef(null)
   const previewTransitioningRef = useRef(false)
 
   const persistProgress = useCallback((movie, position) => {
     if (!movie || movie.source === 'EXTERNAL' || !Number.isFinite(position) || position < 0) {
-      return
+      return Promise.resolve()
     }
     const key = movie.source === 'SERIES' ? `episode:${movie.episodeId}` : `movie:${movie.id}`
     if (savedPositionsRef.current.get(key) === position) {
-      return
+      return progressRequestsRef.current.get(key) ?? Promise.resolve()
     }
     savedPositionsRef.current.set(key, position)
     setProgressRevision((revision) => revision + 1)
     const progressUrl = movie.source === 'SERIES'
       ? `/api/series/episodes/${movie.episodeId}/progress`
       : `/api/movies/${movie.id}/progress`
-    postJson(progressUrl, { position })
+    const previousRequest = progressRequestsRef.current.get(key) ?? Promise.resolve()
+    const request = previousRequest
+      .catch(() => {})
+      .then(() => postJson(progressUrl, { position }))
       .then((response) => {
         if (!response.ok) {
           throw new Error('Playback position could not be saved.')
@@ -56,6 +60,13 @@ export function usePlayback({ selectedMovie, setError }) {
         }
         setError('Playback position could not be saved.')
       })
+      .finally(() => {
+        if (progressRequestsRef.current.get(key) === request) {
+          progressRequestsRef.current.delete(key)
+        }
+      })
+    progressRequestsRef.current.set(key, request)
+    return request
   }, [setError])
 
   const audioTracks = useMemo(
@@ -128,7 +139,7 @@ export function usePlayback({ selectedMovie, setError }) {
         return
       }
     }
-    persistProgress(selectedMovieRef.current, playbackPositionRef.current)
+    await persistProgress(selectedMovieRef.current, playbackPositionRef.current)
     setIsFullPlayback(false)
     setKeepPlaybackStream(false)
   }, [persistProgress, setError])
