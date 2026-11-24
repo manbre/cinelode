@@ -429,13 +429,18 @@ function VideoPlayer({
         </section>
       )}
       {!isFullscreen && (
-        <div className="absolute inset-x-0 bottom-0 flex items-end justify-start gap-4 p-5 text-left sm:p-7">
-          <h2 className="min-w-0 text-[1.4175rem] font-bold leading-tight drop-shadow sm:text-[1.771875rem]">
-            {selectedMovie.source === 'SERIES'
-              ? `${selectedMovie.title} · S${String(selectedMovie.seasonNumber).padStart(2, '0')} E${String(selectedMovie.episodeNumber).padStart(2, '0')}`
-              : selectedMovie.title}
-          </h2>
-        </div>
+        <>
+          {!isFullPlayback && (
+            <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1] h-40 bg-gradient-to-t from-black/80 via-black/35 to-transparent" />
+          )}
+          <div className="absolute inset-x-0 bottom-0 z-[2] flex items-end justify-start gap-4 p-5 text-left sm:p-7">
+            <h2 className="min-w-0 text-[1.4175rem] font-bold leading-tight drop-shadow sm:text-[1.771875rem]">
+              {selectedMovie.source === 'SERIES'
+                ? `${selectedMovie.title} · S${String(selectedMovie.seasonNumber).padStart(2, '0')} E${String(selectedMovie.episodeNumber).padStart(2, '0')}`
+                : selectedMovie.title}
+            </h2>
+          </div>
+        </>
       )}
     </div>
   )
