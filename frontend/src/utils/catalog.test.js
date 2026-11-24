@@ -69,6 +69,42 @@ test('advances movies in catalog order when no playlist exists', () => {
   )
 })
 
+test('skips external titles in library playback order', () => {
+  const movies = [
+    { source: 'LOCAL', id: 1, title: 'A' },
+    { source: 'EXTERNAL', id: 2, title: 'External' },
+    { source: 'LOCAL', id: 3, title: 'B' },
+  ]
+
+  assert.equal(
+    getNextPlaybackSelection({
+      selectedContent: movies[0],
+      playlist: [],
+      localMovies: movies,
+      seriesSeasons: [],
+    }).id,
+    3
+  )
+})
+
+test('skips external titles in playlist playback order', () => {
+  const playlist = [
+    { source: 'LOCAL', id: 1, title: 'A' },
+    { source: 'EXTERNAL', id: 2, title: 'External' },
+    { source: 'LOCAL', id: 3, title: 'B' },
+  ]
+
+  assert.equal(
+    getNextPlaybackSelection({
+      selectedContent: playlist[0],
+      playlist,
+      localMovies: [],
+      seriesSeasons: [],
+    }).id,
+    3
+  )
+})
+
 test('advances episodes and then the next season without a playlist', () => {
   const seasons = [
     {

@@ -30,6 +30,15 @@ export function usePlayback({ selectedMovie, setError }) {
   const previewTransitionTimeoutRef = useRef(null)
   const previewTransitioningRef = useRef(false)
 
+  const selectedProgress = selectedMovie?.source === 'SERIES'
+    ? selectedMovie.episodes?.find((episode) => episode.id === selectedMovie.episodeId)?.playbackPosition
+    : selectedMovie?.playbackPosition
+  const selectedProgressKey = selectedMovie?.source === 'SERIES'
+    ? `episode:${selectedMovie.episodeId}`
+    : `movie:${selectedMovie?.id}`
+  const hasSavedProgress = selectedMovie?.source !== 'EXTERNAL'
+    && Math.max(selectedProgress ?? 0, savedPositionsRef.current.get(selectedProgressKey) ?? 0) > 0
+
   const persistProgress = useCallback((movie, position) => {
     if (!movie || movie.source === 'EXTERNAL' || !Number.isFinite(position) || position < 0) {
       return
@@ -341,6 +350,7 @@ export function usePlayback({ selectedMovie, setError }) {
   return {
     audioTracks,
     canResume,
+    hasSavedProgress,
     changePlaybackTrack,
     clearSelection,
     controlsVisible,

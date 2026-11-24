@@ -71,6 +71,9 @@ function Home({ onLogout }) {
   const setLoading = useCinelodeStore((state) => state.setLoading)
   const setError = useCinelodeStore((state) => state.setError)
   const [logoutError, setLogoutError] = useState('')
+  const [upNext, setUpNext] = useState(null)
+  const [upNextCountdown, setUpNextCountdown] = useState(8)
+  const [upNextCancelled, setUpNextCancelled] = useState(false)
   const showExitConfirmation = useCinelodeStore(
     (state) => state.showExitConfirmation,
   )
@@ -89,6 +92,7 @@ function Home({ onLogout }) {
     audioTracks,
     changePlaybackTrack,
     canResume,
+    hasSavedProgress,
     clearSelection,
     controlsVisible,
     currentTime,
@@ -156,7 +160,9 @@ function Home({ onLogout }) {
     setSelectedRated,
   ])
   const playlistPositions = new Map(
-    playlist.map((movie, index) => [contentKey(movie), index + 1]),
+    playlist
+      .filter((movie) => movie.source !== 'EXTERNAL')
+      .map((movie, index) => [contentKey(movie), index + 1]),
   )
   const handleBack = useCallback(() => {
     if (showExitConfirmation) {
@@ -392,6 +398,28 @@ function Home({ onLogout }) {
     selectedPerson,
     selectedRated,
   })
+  const nextPlaybackSelection = useMemo(
+    () => selectedMovie
+      ? getNextPlaybackSelection({ selectedContent: selectedMovie, playlist, localMovies, seriesSeasons })
+      : null,
+    [selectedMovie, playlist, localMovies, seriesSeasons],
+  )
+  const selectedPlaybackKey = selectedMovie
+    ? `${contentKey(selectedMovie)}:${selectedMovie.episodeId ?? ''}`
+    : ''
+  useEffect(() => {
+    setUpNext(null)
+    setUpNextCountdown(8)
+    setUpNextCancelled(false)
+  }, [selectedPlaybackKey])
+  useEffect(() => {
+    if (isFullPlayback) {
+      return
+    }
+    setUpNext(null)
+    setUpNextCountdown(8)
+    setUpNextCancelled(false)
+  }, [isFullPlayback])
   const openMovie = useCallback(
     (movie) => {
       if (
@@ -461,6 +489,9 @@ function Home({ onLogout }) {
         selectionActivatedRef.current = true
         return
       }
+      if (selectedMovie.source === 'EXTERNAL') {
+        return
+      }
       togglePlaylistItem(selectedMovie)
     },
     [openMovie, openSeason, selectedMovie, togglePlaylistItem],
@@ -500,16 +531,52 @@ function Home({ onLogout }) {
         onExternalOpenError,
       )
   }, [setError])
+  const startNextPlayback = useCallback((nextMovie) => {
+    if (!nextMovie) {
+      return
+    }
+    setUpNext(null)
+    selectContent(nextMovie)
+    setSelectedMovie(nextMovie)
+    if (nextMovie.source === 'EXTERNAL') {
+      if (document.fullscreenElement) {
+        document.exitFullscreen().catch(() => {
+          setError('Could not exit fullscreen.')
+        })
+      }
+      openExternalMovie(nextMovie, {
+        fetchUrl: window.fetch.bind(window),
+        openWindow: () => {
+          const popup = window.open('', '_blank')
+          if (popup) {
+            popup.opener = null
+          }
+          return popup
+        },
+        nativeBridge: window.ReactNativeWebView,
+      }).catch((cause) =>
+        setError(cause.message || 'The external link could not be opened.'),
+      )
+      return
+    }
+    setIsFullPlayback(true)
+  }, [selectContent, setError, setIsFullPlayback, setSelectedMovie])
+  const cancelUpNext = useCallback(() => {
+    setUpNext(null)
+    setUpNextCancelled(true)
+  }, [])
   const handlePlaybackEnded = useCallback(() => {
     if (!isFullPlayback || !selectedMovie) {
       return
     }
-    const nextMovie = getNextPlaybackSelection({
-      selectedContent: selectedMovie,
-      playlist,
-      localMovies,
-      seriesSeasons,
-    })
+    if (upNextCancelled) {
+      return
+    }
+    if (upNext) {
+      startNextPlayback(upNext)
+      return
+    }
+    const nextMovie = nextPlaybackSelection
     if (!nextMovie) {
       if (playlist.length > 0) {
         clearPlaylist()
@@ -517,28 +584,50 @@ function Home({ onLogout }) {
       returnToPreview()
       return
     }
-    selectContent(nextMovie)
-    setSelectedMovie(nextMovie)
-    if (nextMovie.source !== 'EXTERNAL') {
-      setIsFullPlayback(true)
-    } else if (document.fullscreenElement) {
-      document
-        .exitFullscreen()
-        .catch(() => setError('Could not exit fullscreen.'))
-    }
+    startNextPlayback(nextMovie)
   }, [
     isFullPlayback,
     clearPlaylist,
     playlist,
-    localMovies,
     returnToPreview,
     selectedMovie,
-    selectContent,
-    seriesSeasons,
-    setIsFullPlayback,
-    setSelectedMovie,
-    setError,
+    nextPlaybackSelection,
+    startNextPlayback,
+    upNext,
+    upNextCancelled,
   ])
+  useEffect(() => {
+    const remaining = duration - currentTime
+    if (
+      !isFullPlayback || !isPlaying || upNext || upNextCancelled
+      || !nextPlaybackSelection || remaining <= 0 || remaining > 300
+    ) {
+      return
+    }
+    setUpNext(nextPlaybackSelection)
+    setUpNextCountdown(8)
+  }, [
+    currentTime,
+    duration,
+    isFullPlayback,
+    isPlaying,
+    nextPlaybackSelection,
+    upNext,
+    upNextCancelled,
+  ])
+  useEffect(() => {
+    if (!isFullPlayback || !upNext || !isPlaying) {
+      return undefined
+    }
+    if (upNextCountdown <= 0) {
+      startNextPlayback(upNext)
+      return undefined
+    }
+    const timer = window.setTimeout(() => {
+      setUpNextCountdown((countdown) => countdown - 1)
+    }, 1000)
+    return () => window.clearTimeout(timer)
+  }, [isFullPlayback, isPlaying, startNextPlayback, upNext, upNextCountdown])
   const openEpisode = useCallback(
     (episode) => {
       if (
@@ -675,6 +764,10 @@ function Home({ onLogout }) {
               playbackPositionRef={playbackPositionRef}
               onPlaybackEnded={handlePlaybackEnded}
               onRestartPlayback={handleRestartPlayback}
+              upNext={upNext}
+              upNextCountdown={upNextCountdown}
+              onStartNext={() => startNextPlayback(upNext)}
+              onCancelNext={cancelUpNext}
             />
             <div className="movie-info min-h-0 lg:overflow-y-auto">
               <MovieDetails
@@ -690,6 +783,7 @@ function Home({ onLogout }) {
                 onStartPlayback={handleStartPlayback}
                 onRestartPlayback={handleRestartPlayback}
                 canResume={canResume}
+                hasSavedProgress={hasSavedProgress}
               />
             </div>
           </>

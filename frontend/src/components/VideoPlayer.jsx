@@ -127,6 +127,10 @@ function VideoPlayer({
   playbackPositionRef,
   onPlaybackEnded,
   onRestartPlayback,
+  upNext,
+  upNextCountdown,
+  onStartNext,
+  onCancelNext,
 }) {
   const useVegaPreview = !isFullPlayback && isNativeWebView()
   return (
@@ -377,6 +381,52 @@ function VideoPlayer({
             </div>
           </div>
         </>
+      )}
+      {isFullPlayback && upNext && (
+        <section
+          aria-label="Up next"
+          className={`absolute right-4 z-30 w-[min(22rem,calc(100%-2rem))] rounded-xl border border-white/15 bg-[#171719]/95 p-3 text-white shadow-2xl backdrop-blur ${
+            isFullscreen ? 'bottom-24' : 'bottom-4'
+          }`}
+        >
+          <div className="flex min-w-0 items-center gap-3">
+            {upNext.posterUrl ? (
+              <img
+                src={upNext.posterUrl}
+                alt=""
+                className="h-16 w-12 shrink-0 rounded object-cover"
+              />
+            ) : (
+              <div aria-hidden="true" className="h-16 w-12 shrink-0 rounded bg-white/10" />
+            )}
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-white/65">
+                Up next · {upNextCountdown}s
+              </p>
+              <p className="mt-1 line-clamp-2 text-sm font-semibold">
+                {upNext.source === 'SERIES'
+                  ? `${upNext.title} · S${String(upNext.seasonNumber).padStart(2, '0')} E${String(upNext.episodeNumber).padStart(2, '0')}`
+                  : upNext.title}
+              </p>
+            </div>
+          </div>
+          <div className="mt-3 flex gap-2">
+            <button
+              type="button"
+              onClick={onStartNext}
+              className="flex-1 rounded-md bg-accent px-3 py-2 text-xs font-semibold text-black transition hover:bg-accent-hover"
+            >
+              Play now
+            </button>
+            <button
+              type="button"
+              onClick={onCancelNext}
+              className="flex-1 rounded-md border border-white/20 px-3 py-2 text-xs font-semibold transition hover:bg-white/10"
+            >
+              Cancel
+            </button>
+          </div>
+        </section>
       )}
       {!isFullscreen && (
         <div className="absolute inset-x-0 bottom-0 flex items-end justify-start gap-4 p-5 text-left sm:p-7">

@@ -31,7 +31,9 @@ export function getNextPlaybackSelection({
     const playlistIndex = playlist.findIndex(
       (item) => contentKey(item) === contentKey(selectedContent)
     )
-    return playlistIndex >= 0 ? playlist[playlistIndex + 1] ?? null : null
+    return playlistIndex >= 0
+      ? playlist.slice(playlistIndex + 1).find((item) => item.source !== 'EXTERNAL') ?? null
+      : null
   }
 
   if (selectedContent.source === 'SERIES') {
@@ -66,7 +68,9 @@ export function getNextPlaybackSelection({
   const movieIndex = localMovies.findIndex(
     (movie) => contentKey(movie) === contentKey(selectedContent)
   )
-  return movieIndex >= 0 ? localMovies[movieIndex + 1] ?? null : null
+  return movieIndex >= 0
+    ? localMovies.slice(movieIndex + 1).find((movie) => movie.source !== 'EXTERNAL') ?? null
+    : null
 }
 
 // Shared catalog helpers for consistent localized sorting and person matching.

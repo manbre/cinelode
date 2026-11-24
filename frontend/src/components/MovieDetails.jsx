@@ -85,6 +85,7 @@ function MovieDetails({
   onStartPlayback,
   onRestartPlayback,
   canResume,
+  hasSavedProgress,
 }) {
   const renderPeople = (value, role) => getPeople({ [role]: value }, role)
     .map((name) => {
@@ -156,11 +157,11 @@ function MovieDetails({
                 type="button"
                 aria-label="Restart from beginning"
                 title="Restart from beginning"
-                aria-hidden={!canResume}
-                tabIndex={canResume ? 0 : -1}
+              aria-hidden={!hasSavedProgress}
+              tabIndex={hasSavedProgress ? 0 : -1}
                 onClick={onRestartPlayback}
                 className={`inline-flex size-10 items-center justify-center rounded-md border border-white/20 text-white transition hover:border-white/40 hover:bg-white/10 ${
-                  canResume ? '' : 'invisible pointer-events-none'
+                  hasSavedProgress ? '' : 'invisible pointer-events-none'
                 }`}
               >
                 <RotateCcw size={16} />

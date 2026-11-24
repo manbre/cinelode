@@ -3,6 +3,9 @@ import { contentKey } from '../utils/catalog'
 export const createPlaylistSlice = (set) => ({
   playlist: [],
   togglePlaylistItem: (movie) => set((state) => {
+    if (movie?.source === 'EXTERNAL') {
+      return state
+    }
     const key = contentKey(movie)
     const existingIndex = state.playlist.findIndex((item) => contentKey(item) === key)
     if (existingIndex >= 0) {

@@ -1,4 +1,4 @@
-import { Clapperboard, LogOut, Search, Tv } from 'lucide-react'
+import { Clapperboard, ExternalLink, LogOut, Search, Tv } from 'lucide-react'
 import { contentKey } from '../utils/catalog'
 
 // Renders one selectable film or season poster in the catalog.
@@ -35,6 +35,12 @@ function MovieCard({ movie, index, selected, playlistPosition, onSelect }) {
         {playlistPosition !== undefined && (
           <span className="absolute right-2 top-2 inline-flex size-7 items-center justify-center rounded-md bg-black/75 text-sm font-bold text-accent backdrop-blur">
             {playlistPosition}
+          </span>
+        )}
+        {movie.source === 'EXTERNAL' && (
+          <span className="absolute left-2 top-2 inline-flex items-center gap-1.5 rounded-md border border-white/20 bg-black/80 px-2 py-1 text-[0.625rem] font-semibold tracking-wide text-white shadow backdrop-blur">
+            <ExternalLink size={12} aria-hidden="true" />
+            EXTERNAL
           </span>
         )}
       </div>
