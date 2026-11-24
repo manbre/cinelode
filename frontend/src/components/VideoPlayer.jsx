@@ -224,7 +224,7 @@ function VideoPlayer({
             } ${previewTransition === 'fading' ? 'opacity-0' : 'opacity-100'}`}
           />
         )}
-        {isFullPlayback && (
+        {isFullPlayback && !isFullscreen && (
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#171719] via-black/10 to-black/20" />
         )}
       </div>
