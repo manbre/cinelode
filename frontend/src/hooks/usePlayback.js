@@ -14,7 +14,7 @@ export function usePlayback({ selectedMovie, setError }) {
   const [playbackStart, setPlaybackStart] = useState(0)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
-  const [canResume, setCanResume] = useState(false)
+  const [resumeAvailableFor, setResumeAvailableFor] = useState(null)
   const [progressRevision, setProgressRevision] = useState(0)
   const [volume, setVolume] = useState(1)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -144,8 +144,13 @@ export function usePlayback({ selectedMovie, setError }) {
     setKeepPlaybackStream(false)
   }, [persistProgress, setError])
 
+  const resumeKey = selectedMovie
+    ? `${selectedMovie.source}:${selectedMovie.id ?? ''}:${selectedMovie.episodeId ?? ''}:${progressRevision}`
+    : ''
+  const canResume = Boolean(selectedMovie && selectedMovie.source !== 'EXTERNAL'
+    && resumeAvailableFor === resumeKey)
+
   useEffect(() => {
-    setCanResume(false)
     if (!selectedMovie || selectedMovie.source === 'EXTERNAL') {
       return undefined
     }
@@ -171,17 +176,17 @@ export function usePlayback({ selectedMovie, setError }) {
       })
       .then((mediaDuration) => {
         if (Number.isFinite(mediaDuration) && mediaDuration - position >= 300) {
-          setCanResume(true)
+          setResumeAvailableFor(resumeKey)
         }
       })
       .catch((cause) => {
         if (cause.name !== 'AbortError') {
-          setCanResume(false)
+          // The selection key prevents stale availability from being shown.
         }
       })
 
     return () => controller.abort()
-  }, [selectedMovie, progressRevision])
+  }, [selectedMovie, progressRevision, resumeKey])
 
   const showPlayerControls = useCallback(() => {
     if (!isFullPlayback) {

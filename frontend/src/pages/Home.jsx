@@ -400,16 +400,24 @@ function Home({ onLogout }) {
     ? `${contentKey(selectedMovie)}:${selectedMovie.episodeId ?? ''}`
     : ''
   useEffect(() => {
+    // These values belong to the selected playback item and reset on change.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setUpNext(null)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setUpNextCountdown(8)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setUpNextCancelled(false)
   }, [selectedPlaybackKey])
   useEffect(() => {
     if (isFullPlayback) {
       return
     }
+    // Reset the transient prompt when full playback closes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setUpNext(null)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setUpNextCountdown(8)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setUpNextCancelled(false)
   }, [isFullPlayback])
   const openMovie = useCallback(
@@ -596,7 +604,10 @@ function Home({ onLogout }) {
     ) {
       return
     }
+    // The prompt becomes visible when playback enters its final five minutes.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setUpNext(nextPlaybackSelection)
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setUpNextCountdown(8)
   }, [
     currentTime,
@@ -612,6 +623,8 @@ function Home({ onLogout }) {
       return undefined
     }
     if (upNextCountdown <= 0) {
+      // This effect owns the countdown transition into the next item.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       startNextPlayback(upNext)
       return undefined
     }
