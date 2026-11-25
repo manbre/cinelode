@@ -120,7 +120,7 @@ function MovieDetails({
       {selectedMovie.source === 'SERIES' && (
         <nav
           aria-label="Choose episode"
-          className="hide-scrollbar flex gap-2 overflow-x-auto px-4 py-2 lg:px-5"
+          className="hide-scrollbar flex h-[4rem] flex-wrap content-start gap-2 overflow-y-auto px-4 pt-2 pb-1 lg:px-5"
         >
           {selectedMovie.episodes.map((episode) => (
             <button
@@ -129,7 +129,7 @@ function MovieDetails({
               aria-label={`Episode ${episode.episodeNumber}`}
               aria-pressed={selectedMovie.episodeId === episode.id}
               onClick={() => openEpisode(episode)}
-              className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium transition ${
+              className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium transition ${
                 selectedMovie.episodeId === episode.id
                   ? 'border-accent bg-accent text-black'
                   : 'border-white/10 bg-white/[0.04] text-white/65 hover:border-white/25 hover:text-white'
@@ -189,7 +189,7 @@ function MovieDetails({
                   {selectedMovie.genre && <span>{selectedMovie.genre}</span>}
                   {selectedMovie.runtime && <span>{selectedMovie.runtime}</span>}
                   {selectedMovie.rated && (selectedMovie.source === 'SERIES' ? (
-                    <span className="rounded border border-white/20 px-1.5">{selectedMovie.rated}</span>
+                    <span>{selectedMovie.rated}</span>
                   ) : (() => {
                       const rated = selectedMovie.rated.trim()
                       const ratedKey = rated.normalize('NFC').toLocaleLowerCase('de')
@@ -214,7 +214,7 @@ function MovieDetails({
                           {selectedMovie.rated}
                         </button>
                       ) : (
-                        <span className="rounded border border-white/20 px-1.5">{selectedMovie.rated}</span>
+                        <span>{selectedMovie.rated}</span>
                       )
                     })())}
                 </div>
