@@ -198,7 +198,7 @@ function MovieDetails({
                           onClick={() => {
                             setSelectedGenre('')
                             setSelectedPerson('')
-                            setSelectedRated((current) => current === ratedKey ? '' : ratedKey)
+                            setSelectedRated(isSelected ? '' : ratedKey)
                           }}
                           className={`inline-flex items-center rounded-full border px-4 py-0.5 transition ${
                             isSelected
