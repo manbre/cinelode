@@ -46,7 +46,7 @@ function notifyNativePlayerState(isFullscreen) {
   )
 }
 // Coordinates catalog selection and playback state across the focused child components.
-function Home({ onLogout, setStartupReady }) {
+function Home({ onLogout, startupReady, setStartupReady }) {
   const [loading, setLoading] = useState(true)
   const [initialPreviewSettled, setInitialPreviewSettled] = useState(false)
   const isVega = isNativeWebView()
@@ -107,6 +107,8 @@ function Home({ onLogout, setStartupReady }) {
     playbackUrl,
     playerContainerRef,
     previewTransition,
+    previewDelayElapsed,
+    setPreviewPosterReady,
     advancePreview,
     resumePreview,
     returnToPreview,
@@ -126,7 +128,7 @@ function Home({ onLogout, setStartupReady }) {
     subtitleTracks,
     videoRef,
     volume,
-  } = usePlayback({ selectedMovie, setError })
+  } = usePlayback({ selectedMovie, setError, startupReady })
   const firstLibraryMovie = useMemo(
     () => getInitialLibrarySelection(movies),
     [movies],
@@ -207,7 +209,7 @@ function Home({ onLogout, setStartupReady }) {
   ])
   const handlePlayPause = useCallback(() => {
     const video = videoRef.current
-    if (!video) {
+    if (!video || (!isFullPlayback && !previewDelayElapsed)) {
       return
     }
     if (video.paused) {
@@ -217,7 +219,7 @@ function Home({ onLogout, setStartupReady }) {
     } else {
       video.pause()
     }
-  }, [setError, videoRef])
+  }, [isFullPlayback, previewDelayElapsed, setError, videoRef])
   const handleSeek = useCallback(
     (offset) => {
       if (!isFullPlayback || !videoRef.current) {
@@ -771,6 +773,8 @@ function Home({ onLogout, setStartupReady }) {
               onPreviewSettled={() => setInitialPreviewSettled(true)}
               onSeek={handleSeek}
               previewTransition={previewTransition}
+              previewDelayElapsed={previewDelayElapsed}
+              onPreviewPosterReady={setPreviewPosterReady}
               advancePreview={advancePreview}
               playbackStart={playbackStart}
               isFullPlayback={isFullPlayback}

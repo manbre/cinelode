@@ -61,6 +61,7 @@ function App() {
     content = (
       <Home
         onLogout={devLoginEnabled ? undefined : handleLogout}
+        startupReady={startupReady}
         setStartupReady={setStartupReady}
       />
     )

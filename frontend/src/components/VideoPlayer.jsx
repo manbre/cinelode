@@ -8,8 +8,8 @@ import {
   Volume2,
   X,
 } from 'lucide-react'
-import { useRef, useState } from 'react'
-import { formatTime, trackLabel } from '../utils/playback'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { formatTime, getPlaybackBase, trackLabel } from '../utils/playback'
 import { isNativeWebView } from '../utils/runtime'
 function TrackMenu({ label, icon, value, options, onChange }) {
   const [open, setOpen] = useState(false)
@@ -100,6 +100,8 @@ function VideoPlayer({
   playbackUrl,
   onPreviewSettled,
   previewTransition,
+  previewDelayElapsed,
+  onPreviewPosterReady,
   playbackStart,
   isFullPlayback,
   isPlaybackStream,
@@ -133,6 +135,20 @@ function VideoPlayer({
   onStartNext,
   onCancelNext,
 }) {
+  const showPreviewPoster = !isFullPlayback && !previewDelayElapsed
+  const playWhenReady = useCallback(() => {
+    const video = videoRef.current
+    if (!showPreviewPoster && video?.paused && video.readyState >= 3) {
+      video.play().catch(() => {
+        setError('The browser blocked automatic playback with audio.')
+      })
+    }
+  }, [setError, showPreviewPoster, videoRef])
+
+  useEffect(() => {
+    playWhenReady()
+  }, [playWhenReady, playbackUrl])
+
   const useVegaPreview = !isFullPlayback && isNativeWebView()
   return (
     <div
@@ -164,23 +180,26 @@ function VideoPlayer({
             />
           )
         ) : (
-          <video
+          <>
+            {showPreviewPoster && selectedMovie.posterUrl && (
+              <img
+                key={getPlaybackBase(selectedMovie)}
+                src={selectedMovie.posterUrl}
+                alt=""
+                onLoad={() => onPreviewPosterReady(true)}
+                onError={() => onPreviewPosterReady(true)}
+                className="absolute inset-0 size-full object-contain"
+              />
+            )}
+            <video
               key={playbackUrl}
               ref={videoRef}
               src={playbackUrl}
-              autoPlay
+              autoPlay={!showPreviewPoster}
               playsInline
-              preload="metadata"
+              preload={showPreviewPoster ? 'auto' : 'metadata'}
               onLoadedData={onPreviewSettled}
-              onCanPlay={() => {
-                const video = videoRef.current
-                if (!video) {
-                  return
-                }
-                video.play().catch(() => {
-                  setError('The browser blocked automatic playback with audio.')
-                })
-              }}
+              onCanPlay={playWhenReady}
               onLoadedMetadata={(event) => {
                 const mediaDuration = event.currentTarget.duration
                 if (Number.isFinite(mediaDuration) && mediaDuration > 0) {
@@ -222,10 +241,11 @@ function VideoPlayer({
                   'Playback failed. Check FFmpeg output and the browser console.',
                 )
               }}
-            className={`absolute object-cover transition-opacity duration-[350ms] ${
-              !isFullPlayback ? 'preview-video' : 'inset-0 size-full'
-            } ${previewTransition === 'fading' ? 'opacity-0' : 'opacity-100'}`}
-          />
+              className={`absolute object-cover transition-opacity duration-[350ms] ${
+                !isFullPlayback ? 'preview-video' : 'inset-0 size-full'
+              } ${previewTransition === 'fading' || showPreviewPoster ? 'opacity-0' : 'opacity-100'}`}
+            />
+          </>
         )}
         {isFullPlayback && !isFullscreen && (
           <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#171719] via-black/10 to-black/20" />

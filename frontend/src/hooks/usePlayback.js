@@ -1,9 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { buildPlaybackUrl, getPlaybackBase } from '../utils/playback'
+import { buildPlaybackUrl, canStartPreviewDelay, getPlaybackBase, isPlayerFullscreen, PREVIEW_POSTER_MS } from '../utils/playback'
 import { isNativeWebView } from '../utils/runtime'
 import { postJson } from '../utils/auth'
 
-export function usePlayback({ selectedMovie, setError }) {
+export function usePlayback({ selectedMovie, setError, startupReady }) {
+  const [previewPosterReady, setPreviewPosterReady] = useState(false)
+  const [previewDelayElapsed, setPreviewDelayElapsed] = useState(false)
   const [previewIteration, setPreviewIteration] = useState(0)
   const [previewTransition, setPreviewTransition] = useState('visible')
   const [isFullPlayback, setIsFullPlayback] = useState(false)
@@ -94,10 +96,16 @@ export function usePlayback({ selectedMovie, setError }) {
     previewIteration,
   ])
 
+  const resetPreviewPoster = useCallback(() => {
+    setPreviewPosterReady(false)
+    setPreviewDelayElapsed(false)
+  }, [])
+
   const selectContent = useCallback((movie) => {
     videoRef.current?.pause()
     setError('')
     selectedMovieRef.current = movie
+    resetPreviewPoster()
     setKeepPlaybackStream(false)
     setPreviewIteration(0)
     setPreviewTransition('visible')
@@ -113,7 +121,17 @@ export function usePlayback({ selectedMovie, setError }) {
     setCurrentTime(0)
     setDuration(0)
     setTracks([])
-  }, [setError])
+  }, [resetPreviewPoster, setError])
+
+  useEffect(() => {
+    if (isFullPlayback || previewDelayElapsed ||
+        !canStartPreviewDelay(selectedMovie, startupReady, previewPosterReady)) {
+      return
+    }
+
+    const timeout = window.setTimeout(() => setPreviewDelayElapsed(true), PREVIEW_POSTER_MS)
+    return () => window.clearTimeout(timeout)
+  }, [isFullPlayback, previewDelayElapsed, previewPosterReady, selectedMovie, startupReady])
 
   const clearSelection = useCallback(() => {
     videoRef.current?.pause()
@@ -121,28 +139,34 @@ export function usePlayback({ selectedMovie, setError }) {
   }, [])
 
   const resumePreview = useCallback(() => {
-    if (!videoRef.current) {
+    if (!previewDelayElapsed || !videoRef.current) {
       return
     }
     videoRef.current.muted = false
     videoRef.current.play().catch(() => {
       setError('Playback with audio could not be started.')
     })
-  }, [setError])
+  }, [previewDelayElapsed, setError])
 
-  const returnToPreview = useCallback(async () => {
-    if (document.fullscreenElement === playerContainerRef.current) {
-      try {
-        await document.exitFullscreen()
-      } catch {
-        setError('Could not exit fullscreen.')
-        return
-      }
-    }
-    await persistProgress(selectedMovieRef.current, playbackPositionRef.current)
+  const restorePreview = useCallback(() => {
+    videoRef.current?.pause()
+    void persistProgress(selectedMovieRef.current, playbackPositionRef.current)
+    resetPreviewPoster()
     setIsFullPlayback(false)
     setKeepPlaybackStream(false)
-  }, [persistProgress, setError])
+  }, [persistProgress, resetPreviewPoster])
+
+  const returnToPreview = useCallback(async () => {
+    if (!isPlayerFullscreen(playerContainerRef.current, document.fullscreenElement)) {
+      restorePreview()
+      return
+    }
+    try {
+      await document.exitFullscreen()
+    } catch {
+      setError('Could not exit fullscreen.')
+    }
+  }, [restorePreview, setError])
 
   const resumeKey = selectedMovie
     ? `${selectedMovie.source}:${selectedMovie.id ?? ''}:${selectedMovie.episodeId ?? ''}:${progressRevision}`
@@ -333,18 +357,18 @@ export function usePlayback({ selectedMovie, setError }) {
   }, [])
 
   useEffect(() => {
-    let wasFullscreen = document.fullscreenElement === playerContainerRef.current
+    let wasFullscreen = isPlayerFullscreen(playerContainerRef.current, document.fullscreenElement)
     const updateFullscreen = () => {
-      const fullscreen = document.fullscreenElement === playerContainerRef.current
+      const fullscreen = isPlayerFullscreen(playerContainerRef.current, document.fullscreenElement)
       if (wasFullscreen && !fullscreen) {
-        persistProgress(selectedMovieRef.current, playbackPositionRef.current)
+        restorePreview()
       }
       wasFullscreen = fullscreen
       setIsFullscreen(fullscreen)
     }
     document.addEventListener('fullscreenchange', updateFullscreen)
     return () => document.removeEventListener('fullscreenchange', updateFullscreen)
-  }, [persistProgress])
+  }, [restorePreview])
 
   const setSubtitleTrack = useCallback((trackIndex) => {
     setPlaybackStart(playbackPositionRef.current)
@@ -379,6 +403,8 @@ export function usePlayback({ selectedMovie, setError }) {
     playbackUrl,
     playerContainerRef,
     previewTransition,
+    previewDelayElapsed,
+    setPreviewPosterReady,
     previewIteration,
     advancePreview,
     resumePreview,

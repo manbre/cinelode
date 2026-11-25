@@ -1,3 +1,14 @@
+export const PREVIEW_POSTER_MS = 4000
+
+export function isPlayerFullscreen(player, fullscreenElement) {
+  return player != null && player === fullscreenElement
+}
+
+export function canStartPreviewDelay(selectedMovie, startupReady, posterReady) {
+  return Boolean(startupReady && selectedMovie && selectedMovie.source !== 'EXTERNAL' &&
+    (!selectedMovie.posterUrl || posterReady))
+}
+
 const LANGUAGE_CODES = {
   deu: 'de',
   ger: 'de',

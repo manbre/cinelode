@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { buildPlaybackUrl, formatTime, getPlaybackBase, trackLabel } from './playback.js'
+import { buildPlaybackUrl, canStartPreviewDelay, formatTime, getPlaybackBase, isPlayerFullscreen, PREVIEW_POSTER_MS, trackLabel } from './playback.js'
 
 test('builds a preview URL for movies', () => {
   assert.equal(buildPlaybackUrl(
@@ -59,4 +59,22 @@ test('uses track title when language is unavailable', () => {
 
 test('falls back to a numbered label when track metadata is missing', () => {
   assert.equal(trackLabel({}, 1), 'Spur 2')
+})
+
+test('starts the four-second poster delay only when the internal preview is visible', () => {
+  const movie = { source: 'LOCAL', posterUrl: '/poster' }
+  assert.equal(PREVIEW_POSTER_MS, 4000)
+  assert.equal(canStartPreviewDelay(movie, false, true), false)
+  assert.equal(canStartPreviewDelay(movie, true, false), false)
+  assert.equal(canStartPreviewDelay(movie, true, true), true)
+  assert.equal(canStartPreviewDelay({ source: 'SERIES' }, true, false), true)
+  assert.equal(canStartPreviewDelay({ source: 'EXTERNAL', posterUrl: '/poster' }, true, true), false)
+})
+
+test('recognizes the player leaving fullscreen, including when it unmounts', () => {
+  const player = {}
+  assert.equal(isPlayerFullscreen(player, player), true)
+  assert.equal(isPlayerFullscreen(player, null), false)
+  assert.equal(isPlayerFullscreen(player, {}), false)
+  assert.equal(isPlayerFullscreen(null, null), false)
 })
