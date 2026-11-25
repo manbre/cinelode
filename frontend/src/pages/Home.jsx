@@ -46,7 +46,9 @@ function notifyNativePlayerState(isFullscreen) {
   )
 }
 // Coordinates catalog selection and playback state across the focused child components.
-function Home({ onLogout }) {
+function Home({ onLogout, setStartupReady }) {
+  const [loading, setLoading] = useState(true)
+  const [initialPreviewSettled, setInitialPreviewSettled] = useState(false)
   const isVega = isNativeWebView()
   const movies = useCinelodeStore((state) => state.movies)
   const seriesSeasons = useCinelodeStore((state) => state.seriesSeasons)
@@ -57,7 +59,6 @@ function Home({ onLogout }) {
   const selectedGenre = useCinelodeStore((state) => state.selectedGenre)
   const selectedPerson = useCinelodeStore((state) => state.selectedPerson)
   const selectedRated = useCinelodeStore((state) => state.selectedRated)
-  const loading = useCinelodeStore((state) => state.loading)
   const error = useCinelodeStore((state) => state.error)
   const setMovies = useCinelodeStore((state) => state.setMovies)
   const setSeriesSeasons = useCinelodeStore((state) => state.setSeriesSeasons)
@@ -70,7 +71,6 @@ function Home({ onLogout }) {
   const setSelectedGenre = useCinelodeStore((state) => state.setSelectedGenre)
   const setSelectedPerson = useCinelodeStore((state) => state.setSelectedPerson)
   const setSelectedRated = useCinelodeStore((state) => state.setSelectedRated)
-  const setLoading = useCinelodeStore((state) => state.setLoading)
   const setError = useCinelodeStore((state) => state.setError)
   const [logoutError, setLogoutError] = useState('')
   const [upNext, setUpNext] = useState(null)
@@ -368,6 +368,7 @@ function Home({ onLogout }) {
       } catch (cause) {
         if (cause.name !== 'AbortError') {
           setError(cause.message)
+          setStartupReady(true)
         }
       } finally {
         if (!controller.signal.aborted) {
@@ -382,11 +383,23 @@ function Home({ onLogout }) {
   }, [
     selectContent,
     setError,
-    setLoading,
     setMovies,
     setSelectedMovie,
     setSeriesSeasons,
+    setStartupReady,
   ])
+
+  useEffect(() => {
+    if (loading) return
+    if (!playbackUrl || initialPreviewSettled) {
+      setStartupReady(true)
+      return
+    }
+
+    const timeout = window.setTimeout(() => setStartupReady(true), 20000)
+    return () => window.clearTimeout(timeout)
+  }, [initialPreviewSettled, loading, playbackUrl, setStartupReady])
+
   const {
     localMovies,
     availableGenres,
@@ -755,6 +768,7 @@ function Home({ onLogout }) {
               selectedMovie={selectedMovie}
               selectedMovieRef={selectedMovieRef}
               playbackUrl={playbackUrl}
+              onPreviewSettled={() => setInitialPreviewSettled(true)}
               onSeek={handleSeek}
               previewTransition={previewTransition}
               advancePreview={advancePreview}

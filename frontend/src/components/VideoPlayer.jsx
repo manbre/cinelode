@@ -98,6 +98,7 @@ function VideoPlayer({
   selectedMovie,
   selectedMovieRef,
   playbackUrl,
+  onPreviewSettled,
   previewTransition,
   playbackStart,
   isFullPlayback,
@@ -170,6 +171,7 @@ function VideoPlayer({
               autoPlay
               playsInline
               preload="metadata"
+              onLoadedData={onPreviewSettled}
               onCanPlay={() => {
                 const video = videoRef.current
                 if (!video) {
@@ -215,6 +217,7 @@ function VideoPlayer({
                 }
               }}
               onError={() => {
+                onPreviewSettled?.()
                 setError(
                   'Playback failed. Check FFmpeg output and the browser console.',
                 )

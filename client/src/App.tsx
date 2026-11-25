@@ -7,8 +7,8 @@ import {
 import * as React from 'react';
 import {useEffect, useRef, useState} from 'react';
 import {
-  Animated,
   BackHandler,
+  Image,
   Pressable,
   StyleSheet,
   Text,
@@ -22,18 +22,14 @@ export const App = () => {
   const webHistoryCanGoBack = useRef(false);
   const webPlayerIsFullscreen = useRef(false);
   const loadFailed = useRef(false);
-  const hasLoadedOnce = useRef(false);
-  const loadingOverlayTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const webViewUrl = useRef(
-    `${config.frontendUrl}?cinelodeLaunch=${Date.now()}`,
+    `${config.frontendUrl}?cinelodeLaunch=${Date.now()}&cinelodeNativeLoader=1`,
   ).current;
   const currentWebViewUrl = useRef(webViewUrl);
   const validUrl = isValidFrontendUrl(config.frontendUrl);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>(
     validUrl ? 'loading' : 'error',
   );
-  const loadingOverlayOpacity = useRef(new Animated.Value(1)).current;
-  const loadingOverlayFadeStarted = useRef(false);
   const [message, setMessage] = useState(
     validUrl ? '' : 'Eine gültige Frontend-URL muss konfiguriert werden.',
   );
@@ -69,18 +65,8 @@ export const App = () => {
     return () => subscription.remove();
   }, []);
 
-  useEffect(() => () => {
-    if (loadingOverlayTimer.current) {
-      clearTimeout(loadingOverlayTimer.current);
-    }
-    loadingOverlayOpacity.stopAnimation();
-  }, [loadingOverlayOpacity]);
-
   const fail = (reason: string) => {
     loadFailed.current = true;
-    loadingOverlayOpacity.stopAnimation();
-    loadingOverlayOpacity.setValue(1);
-    loadingOverlayFadeStarted.current = false;
     console.error(`Cinelode: ${reason}`);
     setMessage(reason);
     setStatus('error');
@@ -111,22 +97,6 @@ export const App = () => {
     );
   };
 
-  const fadeLoadingOverlay = () => {
-    if (loadingOverlayFadeStarted.current) {
-      return;
-    }
-    loadingOverlayFadeStarted.current = true;
-    Animated.timing(loadingOverlayOpacity, {
-      toValue: 0,
-      duration: 450,
-      useNativeDriver: true,
-    }).start(({finished}) => {
-      if (finished) {
-        setStatus('ready');
-      }
-    });
-  };
-
   return (
     <View style={styles.container}>
       {validUrl && (
@@ -145,35 +115,10 @@ export const App = () => {
           onLoadStart={({nativeEvent}) => {
             currentWebViewUrl.current = nativeEvent.url;
             webPlayerIsFullscreen.current = false;
-            loadFailed.current = false;
-            if (loadingOverlayTimer.current) {
-              clearTimeout(loadingOverlayTimer.current);
-            }
-            if (!hasLoadedOnce.current) {
-              loadingOverlayTimer.current = setTimeout(() => {
-                if (!loadFailed.current) {
-                  hasLoadedOnce.current = true;
-                  fadeLoadingOverlay();
-                }
-                loadingOverlayTimer.current = null;
-              }, 5000);
-            }
-            if (!hasLoadedOnce.current) {
-              setStatus('loading');
-            }
             console.info('Cinelode: page loading started');
             hideSplashScreen();
           }}
           onLoad={() => {
-            hasLoadedOnce.current = true;
-            if (loadingOverlayTimer.current) {
-              clearTimeout(loadingOverlayTimer.current);
-              loadingOverlayTimer.current = null;
-            }
-            if (!loadFailed.current) {
-              console.info('Cinelode: page loading completed');
-              fadeLoadingOverlay();
-            }
             hideSplashScreen();
           }}
           onError={({nativeEvent}) => {
@@ -201,6 +146,18 @@ export const App = () => {
             try {
               const parsedMessage: unknown = JSON.parse(nativeEvent.data);
               if (
+                typeof parsedMessage === 'object' &&
+                parsedMessage !== null &&
+                'type' in parsedMessage &&
+                parsedMessage.type === 'cinelode-startup-loading' &&
+                'loading' in parsedMessage &&
+                typeof parsedMessage.loading === 'boolean'
+              ) {
+                const messageUrl = nativeEvent.url || currentWebViewUrl.current;
+                if (!loadFailed.current && isFrontendPage(messageUrl)) {
+                  setStatus(parsedMessage.loading ? 'loading' : 'ready');
+                }
+              } else if (
                 typeof parsedMessage === 'object' &&
                 parsedMessage !== null &&
                 'type' in parsedMessage &&
@@ -251,19 +208,28 @@ export const App = () => {
         />
       )}
       {status !== 'ready' && (
-        <Animated.View style={[styles.overlay, {opacity: loadingOverlayOpacity}]}>
-          <Text style={styles.message}>
-            {status === 'loading' ? 'Cinelode wird geladen ...' : message}
-          </Text>
+        <View
+          style={[
+            styles.overlay,
+            status === 'loading' && styles.loadingOverlay,
+          ]}>
+          {status === 'loading' ? (
+            <Image
+              accessible
+              accessibilityLabel="Cinelode wird geladen ..."
+              source={require('../assets/image/cinelode-loader.gif')}
+              resizeMode="contain"
+              style={styles.loader}
+            />
+          ) : (
+            <Text style={styles.message}>{message}</Text>
+          )}
           {status === 'error' && validUrl && (
             <Pressable
               hasTVPreferredFocus
               onPress={() => {
                 webHistoryCanGoBack.current = false;
                 loadFailed.current = false;
-                loadingOverlayOpacity.stopAnimation();
-                loadingOverlayOpacity.setValue(1);
-                loadingOverlayFadeStarted.current = false;
                 setStatus('loading');
                 setAttempt(value => value + 1);
               }}
@@ -271,7 +237,7 @@ export const App = () => {
               <Text style={styles.message}>Erneut versuchen</Text>
             </Pressable>
           )}
-        </Animated.View>
+        </View>
       )}
     </View>
   );
@@ -286,6 +252,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: '#101011',
   },
+  loadingOverlay: {backgroundColor: '#000000'},
+  loader: {width: '80%', height: '80%', maxWidth: 414, maxHeight: 414},
   message: {color: '#ffffff', fontSize: 22, textAlign: 'center'},
   retry: {marginTop: 24, padding: 16, backgroundColor: '#333333'},
 });

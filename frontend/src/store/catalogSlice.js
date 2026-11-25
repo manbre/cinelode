@@ -8,7 +8,6 @@ export const createCatalogSlice = (set) => ({
   selectedGenre: '',
   selectedPerson: '',
   selectedRated: '',
-  loading: true,
   error: '',
   setMovies: (movies) => set({ movies }),
   setSeriesSeasons: (seriesSeasons) => set({ seriesSeasons }),
@@ -19,6 +18,5 @@ export const createCatalogSlice = (set) => ({
   setSelectedGenre: (selectedGenre) => set({ selectedGenre }),
   setSelectedPerson: (selectedPerson) => set({ selectedPerson }),
   setSelectedRated: (selectedRated) => set({ selectedRated }),
-  setLoading: (loading) => set({ loading }),
   setError: (error) => set({ error }),
 })

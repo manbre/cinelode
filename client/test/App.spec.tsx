@@ -11,6 +11,8 @@ const mockRemove = jest.fn();
 const mockAddBackListener = jest.fn();
 const mockOpenURL = jest.fn();
 
+jest.mock('../assets/image/cinelode-loader.gif', () => 1);
+
 jest.mock('../config.json', () => ({
   frontendUrl: 'https://cinelode.example:5173',
 }));
@@ -36,22 +38,6 @@ jest.mock('@amazon-devices/webview', () => {
 jest.mock('@amazon-devices/react-native-kepler', () => ({
   usePreventHideSplashScreen: jest.fn(),
   useHideSplashScreenCallback: () => mockHideSplash,
-  Animated: {
-    Value: class {
-      setValue = jest.fn();
-      stopAnimation = jest.fn();
-    },
-    timing: (
-      value: {setValue: (next: number) => void},
-      animationConfig: {toValue: number},
-    ) => ({
-      start: (callback?: (result: {finished: boolean}) => void) => {
-        value.setValue(animationConfig.toValue);
-        callback?.({finished: true});
-      },
-    }),
-    View: 'Animated.View',
-  },
   Linking: {openURL: (...args: unknown[]) => mockOpenURL(...args)},
   BackHandler: {
     addEventListener: (event: string, handler: () => boolean) =>
@@ -62,6 +48,7 @@ jest.mock('@amazon-devices/react-native-kepler', () => ({
     absoluteFillObject: {},
     flatten: (style: unknown) => style,
   },
+  Image: 'Image',
   View: 'View',
   Text: 'Text',
   Pressable: 'Pressable',
@@ -98,20 +85,24 @@ describe('App', () => {
     expect(mockHideSplash).toHaveBeenCalled();
   });
 
-  it('shows loading and forwards root back after the WebView finishes loading', () => {
+  it('keeps the native GIF visible until the frontend reports readiness', () => {
     const screen = render(<App />);
     const webview = screen.getByTestId('cinelode-webview');
     expect(webview.props.source.uri).toMatch(
-      /^https:\/\/cinelode\.example:5173\?cinelodeLaunch=\d+$/,
+      /^https:\/\/cinelode\.example:5173\?cinelodeLaunch=\d+&cinelodeNativeLoader=1$/,
     );
-    expect(screen.getByText('Cinelode wird geladen ...')).toBeTruthy();
+    expect(screen.getByLabelText('Cinelode wird geladen ...')).toBeTruthy();
     const back = mockAddBackListener.mock.calls[0][1] as () => boolean;
     expect(back()).toBe(true);
     expect(mockInjectJavaScript).toHaveBeenCalled();
     fireEvent(webview, 'loadStart', {nativeEvent: {canGoBack: false}});
     expect(mockHideSplash).toHaveBeenCalled();
     fireEvent(webview, 'load', {nativeEvent: {canGoBack: true}});
-    expect(screen.queryByText('Cinelode wird geladen ...')).toBeNull();
+    const data = JSON.stringify({type: 'cinelode-startup-loading', loading: false});
+    fireEvent(webview, 'message', {nativeEvent: {data, url: 'https://other.example/'}});
+    expect(screen.getByLabelText('Cinelode wird geladen ...')).toBeTruthy();
+    fireEvent(webview, 'message', {nativeEvent: {data, url: config.frontendUrl}});
+    expect(screen.queryByLabelText('Cinelode wird geladen ...')).toBeNull();
     expect(mockHideSplash).toHaveBeenCalled();
     expect(back()).toBe(true);
     expect(mockGoBack).not.toHaveBeenCalled();
@@ -257,7 +248,7 @@ describe('App', () => {
     fireEvent(webview, 'load', {nativeEvent: {canGoBack: false}});
     expect(screen.getByText(/TLS-Zertifikat/)).toBeTruthy();
     fireEvent.press(screen.getByText('Erneut versuchen'));
-    expect(screen.getByText('Cinelode wird geladen ...')).toBeTruthy();
+    expect(screen.getByLabelText('Cinelode wird geladen ...')).toBeTruthy();
   });
 
   it('only treats HTTP errors in the main frame as page failures', () => {
