@@ -21,3 +21,37 @@ const KEY_ACTIONS = {
 export function getTvKeyAction(key) {
   return KEY_ACTIONS[key] ?? null
 }
+
+export function isRightmostInRow(source, cards) {
+  return !cards.some((card) => card.left > source.left
+    && card.top < source.bottom
+    && card.bottom > source.top)
+}
+
+export function isTopmostInColumn(source, cards) {
+  return !cards.some((card) => card.top < source.top
+    && card.left < source.right
+    && card.right > source.left)
+}
+
+export function isTextCursorAtBoundary(direction, selectionStart, selectionEnd, valueLength) {
+  return (direction === 'left' && selectionStart === 0 && selectionEnd === 0)
+    || (direction === 'right'
+      && selectionStart === valueLength
+      && selectionEnd === valueLength)
+}
+
+export function isBlockedVerticalNavigation(direction, sourceRole, targetRole) {
+  const isVertical = direction === 'up' || direction === 'down'
+  const isPlaybackRatedPair = (sourceRole === 'playback-action' && targetRole === 'rated-filter')
+    || (sourceRole === 'rated-filter' && targetRole === 'playback-action')
+  return isVertical && isPlaybackRatedPair
+}
+
+export function isWriterUpNavigation(direction, personRole) {
+  return direction === 'up' && personRole === 'writer'
+}
+
+export function isWriterRightNavigation(direction, personRole) {
+  return direction === 'right' && personRole === 'writer'
+}

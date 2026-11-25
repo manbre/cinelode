@@ -286,6 +286,19 @@ function Home({ onLogout }) {
     onSeek: handleSeek,
   })
   useEffect(() => {
+    if (!isFullPlayback || !isFullscreen) {
+      return undefined
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      showPlayerControls()
+      playerControlsRef.current
+        ?.querySelector('button:not([disabled])')
+        ?.focus()
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [isFullPlayback, isFullscreen, showPlayerControls])
+  useEffect(() => {
     if (showExitConfirmation) {
       window.requestAnimationFrame(() => exitCancelRef.current?.focus())
     }
@@ -722,6 +735,7 @@ function Home({ onLogout }) {
         </p>
       )}
       <aside
+        data-details-panel="true"
         className={`hide-scrollbar relative z-10 min-h-0 min-w-0 bg-[#111112]/50 ${
           selectedMovie
             ? `order-1 block h-[42dvh] shrink-0 overflow-y-auto lg:order-2 lg:h-full lg:min-h-0 lg:shrink-0 ${

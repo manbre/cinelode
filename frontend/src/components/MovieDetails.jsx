@@ -95,6 +95,7 @@ function MovieDetails({
         <button
           key={name}
           type="button"
+          data-person-role={role}
           onClick={() => {
             setSelectedGenre('')
             setSelectedRated('')
@@ -146,6 +147,8 @@ function MovieDetails({
             <div className="-ml-1 flex shrink-0 items-center gap-3">
               <button
                 type="button"
+                data-navigation-role="playback-action"
+                data-primary-play="true"
                 onClick={onStartPlayback}
                 className="inline-flex w-32 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-accent bg-accent px-6 py-2.5 text-sm font-semibold text-black transition hover:border-accent-hover hover:bg-accent-hover"
               >
@@ -154,6 +157,7 @@ function MovieDetails({
               </button>
               <button
                 type="button"
+                data-navigation-role="playback-action"
                 aria-label="Restart from beginning"
                 title="Restart from beginning"
                 aria-hidden={!canResume}
@@ -194,6 +198,7 @@ function MovieDetails({
                       return isFilterable ? (
                         <button
                           type="button"
+                          data-navigation-role="rated-filter"
                           aria-pressed={isSelected}
                           onClick={() => {
                             setSelectedGenre('')

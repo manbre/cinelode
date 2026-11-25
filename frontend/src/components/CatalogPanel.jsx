@@ -8,6 +8,7 @@ function MovieCard({ movie, index, selected, playlistPosition, onSelect }) {
   return (
     <button
       type="button"
+      data-catalog-card="true"
       onClick={onSelect}
       aria-label={isSeriesCard
         ? `${movie.title}, Season ${movie.seasonNumber}`
@@ -82,7 +83,7 @@ function CatalogPanel({
   return (
     <section className="hide-scrollbar relative z-10 order-2 min-h-0 flex-1 overflow-y-auto bg-[#151516]/55 px-5 pb-5 pt-0 sm:px-7 lg:order-1 lg:px-8 lg:pl-3 lg:pr-3">
       <div className="sticky top-0 z-20 -mx-5 mb-3 bg-[#151516]/75 px-5 pb-4 pt-5 backdrop-blur-md sm:-mx-7 sm:px-7 lg:-mx-8 lg:px-8">
-        <div className="mb-[10.667px] flex justify-center">
+        <div data-catalog-toolbar="true" className="mb-[10.667px] flex justify-center">
           <div className="flex w-full max-w-3xl items-center gap-2">
             <span
               aria-live="polite"
@@ -153,6 +154,7 @@ function CatalogPanel({
 
         {!loading && availableGenres.length > 0 && (
           <div
+            data-genre-row="true"
             aria-label="Filter by genre"
             className="hide-scrollbar -mx-1 flex gap-2 overflow-x-auto p-1"
           >
@@ -160,6 +162,7 @@ function CatalogPanel({
               <button
                 key={genre || 'all-genres'}
                 type="button"
+                data-genre-chip="true"
                 aria-pressed={selectedGenre === genre}
                 onClick={() => {
                   setSelectedPerson('')
@@ -195,7 +198,7 @@ function CatalogPanel({
           {isSeriesMode ? 'No seasons found.' : 'No movies found.'}
         </p>
       ) : (
-        <div className="grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3 sm:gap-x-5 lg:grid-cols-4 lg:gap-x-2.5 lg:gap-y-4">
+        <div data-catalog-grid="true" className="grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3 sm:gap-x-5 lg:grid-cols-4 lg:gap-x-2.5 lg:gap-y-4">
           {filteredMovies.map((movie, index) => (
             <MovieCard
               key={movie.id}
