@@ -62,6 +62,7 @@ movies/                                   # CINELODE_MEDIA_ROOT
   Example Film (2024).mkv
   Example Film (2024).jpg                 # optional movie poster
   External Film (2022).txt               # contains an HTTP(S) URL
+  External Film (2022).jpg                # add your own poster image here
   Example Collection/
     01_First Film (2020).mkv
     01_First Film (2020).jpg
