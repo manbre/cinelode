@@ -110,7 +110,7 @@ function Home({ onLogout, startupReady, setStartupReady }) {
   const {
     audioTracks,
     changePlaybackTrack,
-    canResume,
+    resumeProgress,
     clearSelection,
     controlsVisible,
     currentTime,
@@ -907,7 +907,7 @@ function Home({ onLogout, startupReady, setStartupReady }) {
                 ratedMovieCounts={ratedMovieCounts}
                 onStartPlayback={handleStartPlayback}
                 onRestartPlayback={handleRestartPlayback}
-                canResume={canResume}
+                resumeProgress={resumeProgress}
               />
             </div>
           </>

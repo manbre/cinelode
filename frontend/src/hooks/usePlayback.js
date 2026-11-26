@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { buildPlaybackUrl, canStartPreviewDelay, getPlaybackBase, isPlayerFullscreen, PREVIEW_POSTER_MS } from '../utils/playback'
+import { buildPlaybackUrl, canStartPreviewDelay, getPlaybackBase, getResumeProgress, isPlayerFullscreen, MIN_RESUME_SECONDS, PREVIEW_POSTER_MS } from '../utils/playback'
 import { isNativeWebView } from '../utils/runtime'
 import { postJson } from '../utils/auth'
 
@@ -16,7 +16,7 @@ export function usePlayback({ selectedMovie, setError, startupReady }) {
   const [playbackStart, setPlaybackStart] = useState(0)
   const [currentTime, setCurrentTime] = useState(0)
   const [duration, setDuration] = useState(0)
-  const [resumeAvailableFor, setResumeAvailableFor] = useState(null)
+  const [resumeInfo, setResumeInfo] = useState(null)
   const [progressRevision, setProgressRevision] = useState(0)
   const [volume, setVolume] = useState(1)
   const [isPlaying, setIsPlaying] = useState(false)
@@ -171,8 +171,8 @@ export function usePlayback({ selectedMovie, setError, startupReady }) {
   const resumeKey = selectedMovie
     ? `${selectedMovie.source}:${selectedMovie.id ?? ''}:${selectedMovie.episodeId ?? ''}:${progressRevision}`
     : ''
-  const canResume = Boolean(selectedMovie && selectedMovie.source !== 'EXTERNAL'
-    && resumeAvailableFor === resumeKey)
+  const resumeProgress = resumeInfo?.key === resumeKey ? resumeInfo.progress : null
+  const canResume = Boolean(resumeProgress)
 
   useEffect(() => {
     if (!selectedMovie || selectedMovie.source === 'EXTERNAL') {
@@ -186,7 +186,7 @@ export function usePlayback({ selectedMovie, setError, startupReady }) {
       ? `episode:${selectedMovie.episodeId}`
       : `movie:${selectedMovie.id}`
     const position = Math.max(savedPosition ?? 0, savedPositionsRef.current.get(key) ?? 0)
-    if (position < 300) {
+    if (position < MIN_RESUME_SECONDS) {
       return undefined
     }
 
@@ -199,8 +199,8 @@ export function usePlayback({ selectedMovie, setError, startupReady }) {
         return response.json()
       })
       .then((mediaDuration) => {
-        if (Number.isFinite(mediaDuration) && mediaDuration - position >= 300) {
-          setResumeAvailableFor(resumeKey)
+        if (!controller.signal.aborted) {
+          setResumeInfo({ key: resumeKey, progress: getResumeProgress(position, mediaDuration) })
         }
       })
       .catch((cause) => {
@@ -388,7 +388,7 @@ export function usePlayback({ selectedMovie, setError, startupReady }) {
 
   return {
     audioTracks,
-    canResume,
+    resumeProgress,
     changePlaybackTrack,
     clearSelection,
     controlsVisible,

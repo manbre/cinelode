@@ -1,4 +1,16 @@
 export const PREVIEW_POSTER_MS = 4000
+export const MIN_RESUME_SECONDS = 300
+
+export function getResumeProgress(position, duration) {
+  if (!Number.isFinite(position) || !Number.isFinite(duration)
+      || position < MIN_RESUME_SECONDS || duration - position < MIN_RESUME_SECONDS) {
+    return null
+  }
+  return {
+    percent: position / duration * 100,
+    remainingMinutes: Math.ceil((duration - position) / 60),
+  }
+}
 
 export function isPlayerFullscreen(player, fullscreenElement) {
   return player != null && player === fullscreenElement

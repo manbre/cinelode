@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { buildPlaybackUrl, canStartPreviewDelay, formatTime, getPlaybackBase, isPlayerFullscreen, PREVIEW_POSTER_MS, trackLabel } from './playback.js'
+import { buildPlaybackUrl, canStartPreviewDelay, formatTime, getPlaybackBase, getResumeProgress, isPlayerFullscreen, PREVIEW_POSTER_MS, trackLabel } from './playback.js'
 
 test('builds a preview URL for movies', () => {
   assert.equal(buildPlaybackUrl(
@@ -77,4 +77,13 @@ test('recognizes the player leaving fullscreen, including when it unmounts', () 
   assert.equal(isPlayerFullscreen(player, null), false)
   assert.equal(isPlayerFullscreen(player, {}), false)
   assert.equal(isPlayerFullscreen(null, null), false)
+})
+
+
+test('calculates resume progress and rounds up remaining minutes', () => {
+  assert.deepEqual(getResumeProgress(1800, 3600), { percent: 50, remainingMinutes: 30 })
+  assert.equal(getResumeProgress(1800, 3601).remainingMinutes, 31)
+  assert.equal(getResumeProgress(299, 3600), null)
+  assert.equal(getResumeProgress(3301, 3600), null)
+  assert.equal(getResumeProgress(1800, NaN), null)
 })
