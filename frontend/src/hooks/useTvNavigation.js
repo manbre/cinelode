@@ -123,7 +123,7 @@ function focusGenreFromCatalogColumnTop(direction) {
 function focusPlayFromCatalogRowEnd(direction) {
   const active = document.activeElement
   if (direction !== 'right'
-      || !window.matchMedia('(min-width: 1024px)').matches
+      || !window.matchMedia('(min-width: 768px)').matches
       || !(active instanceof HTMLElement)
       || !active.matches('[data-catalog-card="true"]')) {
     return false

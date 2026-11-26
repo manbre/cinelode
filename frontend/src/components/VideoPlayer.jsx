@@ -98,6 +98,7 @@ function VideoPlayer({
   selectedMovie,
   selectedMovieRef,
   playbackUrl,
+  previewVisible,
   onPreviewSettled,
   previewTransition,
   previewDelayElapsed,
@@ -135,7 +136,7 @@ function VideoPlayer({
   onStartNext,
   onCancelNext,
 }) {
-  const showPreviewPoster = !isFullPlayback && !previewDelayElapsed
+  const showPreviewPoster = !isFullPlayback && (!previewVisible || !previewDelayElapsed)
   const playWhenReady = useCallback(() => {
     const video = videoRef.current
     if (!showPreviewPoster && video?.paused && video.readyState >= 3) {
@@ -158,13 +159,13 @@ function VideoPlayer({
       onFocusCapture={showPlayerControls}
       className={`relative overflow-hidden bg-black lg:min-h-0 ${
         useVegaPreview
-          ? '-top-2 aspect-video min-h-0 lg:top-0'
-          : 'aspect-video min-h-[17.5rem] sm:min-h-[21.25rem]'
+          ? '-top-2 aspect-video min-h-0 md:top-0'
+          : 'aspect-video min-h-0'
       } ${
         !isFullPlayback
           ? useVegaPreview
-            ? 'preview-layout-player lg:aspect-auto lg:h-full lg:min-h-0'
-            : 'preview-layout-player [clip-path:inset(0)] lg:aspect-auto lg:h-full lg:min-h-0'
+            ? 'preview-layout-player md:aspect-auto md:h-full md:min-h-0'
+            : 'preview-layout-player [clip-path:inset(0)] md:aspect-auto md:h-full md:min-h-0'
           : ''
       } [&:fullscreen]:aspect-auto [&:fullscreen]:h-screen [&:fullscreen]:w-screen [&:fullscreen]:min-h-0 ${
         isFullscreen && !controlsVisible ? 'cursor-none' : ''

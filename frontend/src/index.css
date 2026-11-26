@@ -59,35 +59,35 @@ body {
   color: var(--color-text-primary);
 }
 
-@media (min-width: 1024px) {
-  html {
-    font-size: min(1.2559vw, 2.5478dvh);
+.catalog-panel {
+  container-type: inline-size;
+}
+
+@container (width < 24rem) {
+  .catalog-toolbar {
+    flex-wrap: wrap;
   }
 
-  body {
-    display: grid;
-    min-height: 100dvh;
-    overflow-x: clip;
-    place-items: center;
+  .catalog-search {
+    order: 1;
+    flex: 1 0 100%;
+    max-width: none;
   }
+}
 
+.catalog-grid {
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, max(7.5rem, calc((100% - 2.25rem) / 4))), 1fr));
+}
+
+@media (min-width: 768px) {
   .layout-frame {
-    width: calc(50vw + min(50vw, 101.4331dvh) + 4px);
-    height: min(100dvh, 49.29356vw);
-    left: calc(max(0px, (100vw - 202.8662dvh) / 4) + 2px);
-    grid-template-columns:
-      minmax(0, calc(min(100vw, 202.8662dvh) * 0.45))
-      minmax(0, 1fr);
-    grid-template-rows: minmax(0, 1fr);
-  }
-
-  .layout-frame.vega-layout {
-    height: 100dvh;
+    width: 100%;
+    grid-template-columns: minmax(0, 45fr) minmax(0, 55fr);
   }
 
   .details-panel {
     display: grid;
-    grid-template-rows: 52.5% minmax(0, 1fr);
+    grid-template-rows: min(52.5%, 31vw) minmax(0, 1fr);
     align-self: stretch;
     width: 100%;
     height: 100%;

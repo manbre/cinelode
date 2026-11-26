@@ -66,7 +66,8 @@ function PlotText({ text }) {
 
   return (
     <p ref={plotRef} className="text-sm leading-relaxed text-white/80">
-      {visibleText}
+      <span className="md:hidden">{text}</span>
+      <span className="hidden md:inline">{visibleText}</span>
     </p>
   )
 }
@@ -74,6 +75,8 @@ function PlotText({ text }) {
 // Displays the selected title's metadata and keeps episode/person actions with that view.
 function MovieDetails({
   selectedMovie,
+  inPlaylist,
+  onTogglePlaylist,
   openEpisode,
   personMovieCounts,
   selectedPerson,
@@ -86,6 +89,7 @@ function MovieDetails({
   onRestartPlayback,
   canResume,
 }) {
+  const playlistAction = inPlaylist ? 'Remove from playlist' : 'Add to playlist'
   const renderPeople = (value, role) => getPeople({ [role]: value }, role)
     .map((name) => {
       const normalizedName = normalizePersonName(name)
@@ -117,40 +121,16 @@ function MovieDetails({
 
   return (
     <>
-      {selectedMovie.source === 'SERIES' && (
-        <nav
-          aria-label="Choose episode"
-          className="hide-scrollbar flex h-[4rem] flex-wrap content-start gap-2 overflow-y-auto px-4 pt-2 pb-1 lg:px-5"
-        >
-          {selectedMovie.episodes.map((episode) => (
-            <button
-              key={episode.id}
-              type="button"
-              aria-label={`Episode ${episode.episodeNumber}`}
-              aria-pressed={selectedMovie.episodeId === episode.id}
-              onClick={() => openEpisode(episode)}
-              className={`shrink-0 rounded-full border px-2.5 py-0.5 text-xs font-medium transition ${
-                selectedMovie.episodeId === episode.id
-                  ? 'border-accent bg-accent text-black'
-                  : 'border-white/10 bg-white/[0.04] text-white/65 hover:border-white/25 hover:text-white'
-              }`}
-            >
-              {String(episode.episodeNumber).padStart(2, '0')}
-            </button>
-          ))}
-        </nav>
-      )}
-
-      <div className="pb-2 pt-6 pl-3 pr-5 sm:pl-4 sm:pr-7 lg:pl-5 lg:pr-4">
-        <div className="space-y-6">
-          <div className="flex flex-wrap items-center gap-x-6 gap-y-3 text-sm text-white/75">
-            <div className="-ml-1 flex shrink-0 items-center gap-3">
+      <div className="mx-auto max-w-md px-4 pb-2 pt-6 md:mx-0 md:max-w-none md:pr-7 lg:pl-5 lg:pr-4">
+        <div className="flex flex-col gap-5">
+          <div className="flex flex-col items-center gap-x-6 gap-y-3 text-center text-sm text-white/75 md:flex-row md:flex-wrap md:text-left">
+            <div className="flex max-w-full items-center justify-center gap-2 md:-ml-1 md:shrink-0 md:justify-start md:gap-3">
               <button
                 type="button"
                 data-navigation-role="playback-action"
                 data-primary-play="true"
                 onClick={onStartPlayback}
-                className="inline-flex w-32 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-accent bg-accent px-6 py-2.5 text-sm font-semibold text-black transition hover:border-accent-hover hover:bg-accent-hover"
+                className="inline-flex w-24 shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-md border border-accent bg-accent px-2 py-2.5 text-sm font-semibold text-black transition hover:border-accent-hover hover:bg-accent-hover md:w-32 md:px-6"
               >
                 <Play size={14} fill="currentColor" />
                 {canResume ? 'Resume' : 'Play'}
@@ -163,17 +143,30 @@ function MovieDetails({
                 aria-hidden={!canResume}
                 tabIndex={canResume ? 0 : -1}
                 onClick={onRestartPlayback}
-                className={`inline-flex size-10 items-center justify-center rounded-md border border-white/20 text-white transition hover:border-white/40 hover:bg-white/10 ${
-                  canResume ? '' : 'invisible pointer-events-none'
+                className={`size-10 shrink-0 items-center justify-center rounded-md border border-white/20 text-white transition hover:border-white/40 hover:bg-white/10 ${
+                  canResume ? 'inline-flex' : 'hidden md:pointer-events-none md:invisible md:inline-flex'
                 }`}
               >
                 <RotateCcw size={16} />
               </button>
+              {selectedMovie.source !== 'EXTERNAL' && (
+                <button
+                  type="button"
+                  onClick={onTogglePlaylist}
+                  className={`inline-flex min-h-11 items-center justify-center rounded-md border px-2 text-center text-xs leading-tight transition md:hidden ${
+                    inPlaylist
+                      ? 'border-accent text-accent'
+                      : 'border-white/20 text-white hover:border-white/40 hover:bg-white/10'
+                  }`}
+                >
+                  {playlistAction}
+                </button>
+              )}
             </div>
-            <div className="flex min-w-0 flex-col gap-y-1 text-sm text-white/75">
+            <div className="flex min-w-0 flex-col items-center gap-y-1 text-sm text-white/75 md:items-start">
               {(selectedMovie.imdbRating != null || selectedMovie.year
                 || selectedMovie.oscarWins || selectedMovie.primetimeEmmyWins) && (
-                <div className="flex flex-wrap items-center gap-x-4">
+                <div className="flex flex-wrap items-center justify-center gap-x-4 md:justify-start">
                   {selectedMovie.imdbRating != null && (
                     <span className="inline-flex items-center gap-1">
                       <Star size={12} fill="currentColor" />
@@ -185,7 +178,7 @@ function MovieDetails({
                 </div>
               )}
               {(selectedMovie.genre || selectedMovie.runtime || selectedMovie.rated) && (
-                <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+                <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 md:justify-start">
                   {selectedMovie.genre && <span>{selectedMovie.genre}</span>}
                   {selectedMovie.runtime && <span>{selectedMovie.runtime}</span>}
                   {selectedMovie.rated && (selectedMovie.source === 'SERIES' ? (
@@ -221,9 +214,32 @@ function MovieDetails({
               )}
             </div>
           </div>
+          {selectedMovie.source === 'SERIES' && (
+            <nav
+              aria-label="Choose episode"
+              className="flex flex-wrap content-start justify-center gap-2 md:order-first md:max-h-16 md:justify-start md:overflow-y-auto"
+            >
+              {selectedMovie.episodes.map((episode) => (
+                <button
+                  key={episode.id}
+                  type="button"
+                  aria-label={`Episode ${episode.episodeNumber}`}
+                  aria-pressed={selectedMovie.episodeId === episode.id}
+                  onClick={() => openEpisode(episode)}
+                  className={`shrink-0 rounded-full border min-h-10 px-3 text-xs md:min-h-0 md:px-2.5 md:py-0.5 font-medium transition ${
+                    selectedMovie.episodeId === episode.id
+                      ? 'border-accent bg-accent text-black'
+                      : 'border-white/10 bg-white/[0.04] text-white/65 hover:border-white/25 hover:text-white'
+                  }`}
+                >
+                  {String(episode.episodeNumber).padStart(2, '0')}
+                </button>
+              ))}
+            </nav>
+          )}
           <div className={`grid ${
             selectedMovie.director || selectedMovie.actors || selectedMovie.writer
-              ? 'grid-cols-[minmax(0,3fr)_minmax(0,2fr)] gap-5'
+              ? 'gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(0,2fr)]'
               : 'grid-cols-1'
           }`}>
             <section>
@@ -244,7 +260,7 @@ function MovieDetails({
 
             {(selectedMovie.director || selectedMovie.actors
               || (selectedMovie.source === 'SERIES' && selectedMovie.writer)) && (
-              <section className="flex flex-col gap-2 border-l border-white/10 pl-4 text-sm">
+              <section className="flex flex-col gap-2 text-sm lg:border-l lg:border-white/10 lg:pl-4">
                 {selectedMovie.director && (
                   <div>
                     <h3 className="mb-1 text-xs uppercase tracking-wider text-white/65">Director</h3>

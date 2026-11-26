@@ -14,6 +14,7 @@ import {
 import { isNativeWebView } from '../utils/runtime'
 import { openExternalMovie } from '../utils/externalPlayback'
 const MOVIES_API = '/api/movies'
+const MOBILE_LAYOUT = '(width < 768px)'
 function notifyNativeHistory(canGoBack) {
   window.ReactNativeWebView?.postMessage(
     JSON.stringify({
@@ -49,7 +50,22 @@ function notifyNativePlayerState(isFullscreen) {
 function Home({ onLogout, startupReady, setStartupReady }) {
   const [loading, setLoading] = useState(true)
   const [initialPreviewSettled, setInitialPreviewSettled] = useState(false)
-  const isVega = isNativeWebView()
+  const [mobileDetailsOpen, setMobileDetailsOpen] = useState(false)
+  const [isMobile, setIsMobile] = useState(() => window.matchMedia(MOBILE_LAYOUT).matches)
+  const mobileCatalogFocus = useRef(null)
+  const mobileBackButton = useRef(null)
+
+  useLayoutEffect(() => {
+    if (mobileDetailsOpen && isMobile) mobileBackButton.current?.focus({ preventScroll: true })
+  }, [isMobile, mobileDetailsOpen])
+
+  useEffect(() => {
+    const query = window.matchMedia(MOBILE_LAYOUT)
+    const update = () => setIsMobile(query.matches)
+    query.addEventListener('change', update)
+    return () => query.removeEventListener('change', update)
+  }, [])
+
   const movies = useCinelodeStore((state) => state.movies)
   const seriesSeasons = useCinelodeStore((state) => state.seriesSeasons)
   const isSeriesMode = useCinelodeStore((state) => state.isSeriesMode)
@@ -129,7 +145,15 @@ function Home({ onLogout, startupReady, setStartupReady }) {
     subtitleTracks,
     videoRef,
     volume,
-  } = usePlayback({ selectedMovie, setError, startupReady })
+  } = usePlayback({
+    selectedMovie,
+    setError,
+    startupReady: startupReady && (!isMobile || mobileDetailsOpen),
+  })
+  useEffect(() => {
+    if (isMobile && !mobileDetailsOpen) videoRef.current?.pause()
+  }, [isMobile, mobileDetailsOpen, videoRef])
+
   const firstLibraryMovie = useMemo(
     () => getInitialLibrarySelection(movies),
     [movies],
@@ -177,6 +201,10 @@ function Home({ onLogout, startupReady, setStartupReady }) {
       returnToPreview()
       return
     }
+    if (mobileDetailsOpen && isMobile) {
+      window.history.back()
+      return
+    }
     const isInitialView = !isSeriesMode
       && firstLibraryMovie
       && selectedMovie
@@ -196,7 +224,9 @@ function Home({ onLogout, startupReady, setStartupReady }) {
     firstLibraryMovie,
     isFullPlayback,
     isFullscreen,
+    isMobile,
     isSeriesMode,
+    mobileDetailsOpen,
     resetToInitialView,
     returnToPreview,
     search,
@@ -323,8 +353,28 @@ function Home({ onLogout, startupReady, setStartupReady }) {
   useEffect(() => {
     const handleHistoryBack = () => {
       if (isFullscreen || isFullPlayback) {
+        if (mobileDetailsOpen && !window.history.state?.cinelodeMobileDetails) {
+          window.history.pushState(
+            { ...window.history.state, cinelodeMobileDetails: true },
+            '',
+            window.location.href,
+          )
+        }
         notifyNativeHistory(Boolean(window.history.state?.cinelodeView))
         returnToPreview()
+        return
+      }
+      if (window.history.state?.cinelodeMobileDetails) {
+        setMobileDetailsOpen(true)
+        return
+      }
+      if (mobileDetailsOpen) {
+        setMobileDetailsOpen(false)
+        if (isMobile) {
+          if (selectedMovie) selectContent(selectedMovie)
+          window.requestAnimationFrame(() => mobileCatalogFocus.current?.focus({ preventScroll: true }))
+        }
+        notifyNativeHistory(Boolean(window.history.state?.cinelodeView))
         return
       }
       resetToInitialView()
@@ -335,8 +385,12 @@ function Home({ onLogout, startupReady, setStartupReady }) {
   }, [
     isFullPlayback,
     isFullscreen,
+    isMobile,
+    mobileDetailsOpen,
     resetToInitialView,
     returnToPreview,
+    selectContent,
+    selectedMovie,
   ])
   useEffect(() => {
     const controller = new AbortController()
@@ -397,14 +451,14 @@ function Home({ onLogout, startupReady, setStartupReady }) {
 
   useEffect(() => {
     if (loading) return
-    if (!playbackUrl || initialPreviewSettled) {
+    if (isMobile || !playbackUrl || initialPreviewSettled) {
       setStartupReady(true)
       return
     }
 
     const timeout = window.setTimeout(() => setStartupReady(true), 20000)
     return () => window.clearTimeout(timeout)
-  }, [initialPreviewSettled, loading, playbackUrl, setStartupReady])
+  }, [initialPreviewSettled, isMobile, loading, playbackUrl, setStartupReady])
 
   const {
     localMovies,
@@ -453,7 +507,7 @@ function Home({ onLogout, startupReady, setStartupReady }) {
     setUpNextCancelled(false)
   }, [isFullPlayback])
   const openMovie = useCallback(
-    (movie) => {
+    (movie, updateHistory = true) => {
       if (
         selectedMovieRef.current?.id === movie.id &&
         selectedMovieRef.current?.source === movie.source
@@ -466,12 +520,12 @@ function Home({ onLogout, startupReady, setStartupReady }) {
       selectContent(movie)
       setSelectedMovie(movie)
       selectionActivatedRef.current = true
-      setCatalogHistoryView('movie')
+      if (updateHistory) setCatalogHistoryView('movie')
     },
     [resumePreview, selectContent, selectedMovieRef, setSelectedMovie],
   )
   const openSeason = useCallback(
-    (season) => {
+    (season, updateHistory = true) => {
       const firstEpisode =
         season.episodes.find((episode) => episode.episodeNumber === 1) ??
         season.episodes[0]
@@ -495,7 +549,7 @@ function Home({ onLogout, startupReady, setStartupReady }) {
       selectContent(selection)
       setSelectedMovie(selection)
       selectionActivatedRef.current = true
-      setCatalogHistoryView('season')
+      if (updateHistory) setCatalogHistoryView('season')
     },
     [
       resumePreview,
@@ -509,6 +563,24 @@ function Home({ onLogout, startupReady, setStartupReady }) {
     (movie) => {
       const isSelected =
         selectedMovie && contentKey(selectedMovie) === contentKey(movie)
+      if (isMobile) {
+        if (isSelected) {
+          selectContent(selectedMovie)
+        } else if (movie.source === 'SERIES') {
+          openSeason(movie, false)
+          if (!movie.episodes.length) return
+        } else {
+          openMovie(movie, false)
+        }
+        mobileCatalogFocus.current = document.activeElement
+        window.history.pushState(
+          { ...window.history.state, cinelodeMobileDetails: true },
+          '',
+          window.location.href,
+        )
+        setMobileDetailsOpen(true)
+        return
+      }
       if (!isSelected) {
         if (movie.source === 'SERIES') {
           openSeason(movie)
@@ -526,7 +598,7 @@ function Home({ onLogout, startupReady, setStartupReady }) {
       }
       togglePlaylistItem(selectedMovie)
     },
-    [openMovie, openSeason, selectedMovie, togglePlaylistItem],
+    [isMobile, openMovie, openSeason, selectContent, selectedMovie, togglePlaylistItem],
   )
   const handleStartPlayback = useCallback(() => {
     if (selectedMovie?.source !== 'EXTERNAL') {
@@ -694,9 +766,9 @@ function Home({ onLogout, startupReady, setStartupReady }) {
     const firstCard = showSeries ? seriesSeasons[0] : localMovies[0]
     if (firstCard) {
       if (showSeries) {
-        openSeason(firstCard)
+        openSeason(firstCard, !isMobile)
       } else {
-        openMovie(firstCard)
+        openMovie(firstCard, !isMobile)
       }
     }
   }
@@ -709,7 +781,7 @@ function Home({ onLogout, startupReady, setStartupReady }) {
     }
   }
   return (
-    <main className={`layout-frame relative isolate flex h-dvh min-h-0 flex-col overflow-hidden bg-[#101011]/55 text-text-primary lg:grid lg:grid-rows-[minmax(0,1fr)] ${isVega ? 'vega-layout' : ''}`}>
+    <main className="layout-frame relative isolate flex h-dvh min-h-0 flex-col overflow-hidden bg-[#101011]/55 text-text-primary md:grid md:grid-rows-[minmax(0,1fr)]">
       {selectedMovie?.posterUrl && (
         <>
           <img
@@ -725,6 +797,7 @@ function Home({ onLogout, startupReady, setStartupReady }) {
         </>
       )}
       <CatalogPanel
+        mobileDetailsOpen={isMobile && mobileDetailsOpen}
         onLogout={onLogout ? handleLogout : undefined}
         loading={loading}
         error={error}
@@ -757,16 +830,22 @@ function Home({ onLogout, startupReady, setStartupReady }) {
         data-details-panel="true"
         className={`hide-scrollbar relative z-10 min-h-0 min-w-0 bg-[#111112]/50 ${
           selectedMovie
-            ? `order-1 block h-[42dvh] shrink-0 overflow-y-auto lg:order-2 lg:h-full lg:min-h-0 lg:shrink-0 ${
-                !isFullPlayback
-                  ? 'details-panel'
-                  : 'lg:overflow-y-auto'
-              }`
-            : 'hidden lg:block'
+            ? `order-1 min-h-0 flex-1 overflow-y-auto md:order-2 md:h-full ${
+                mobileDetailsOpen ? 'block' : 'hidden md:block'
+              } ${!isFullPlayback ? 'details-panel' : ''}`
+            : 'hidden md:block'
         }`}
       >
         {selectedMovie ? (
           <>
+            <button
+              type="button"
+              ref={mobileBackButton}
+              onClick={() => window.history.back()}
+              className="mx-4 my-2 min-h-11 rounded-md px-2 text-sm md:hidden"
+            >
+              ← Back to library
+            </button>
             <VideoPlayer
               videoRef={videoRef}
               playerContainerRef={playerContainerRef}
@@ -774,6 +853,7 @@ function Home({ onLogout, startupReady, setStartupReady }) {
               selectedMovie={selectedMovie}
               selectedMovieRef={selectedMovieRef}
               playbackUrl={playbackUrl}
+              previewVisible={!isMobile || mobileDetailsOpen}
               onPreviewSettled={() => setInitialPreviewSettled(true)}
               onSeek={handleSeek}
               previewTransition={previewTransition}
@@ -811,9 +891,12 @@ function Home({ onLogout, startupReady, setStartupReady }) {
               onStartNext={() => startNextPlayback(upNext)}
               onCancelNext={cancelUpNext}
             />
-            <div className="movie-info min-h-0 lg:overflow-y-auto">
+            <div className="movie-info min-h-0 md:overflow-y-auto">
               <MovieDetails
+                key={selectedPlaybackKey}
                 selectedMovie={selectedMovie}
+                inPlaylist={playlistPositions.has(contentKey(selectedMovie))}
+                onTogglePlaylist={() => togglePlaylistItem(selectedMovie)}
                 openEpisode={openEpisode}
                 personMovieCounts={personMovieCounts}
                 selectedPerson={selectedPerson}

@@ -77,14 +77,15 @@ function CatalogPanel({
   filteredMovies,
   playlistPositions,
   selectedMovie,
+  mobileDetailsOpen,
   openMovie,
   openSeason,
 }) {
   return (
-    <section className="hide-scrollbar relative z-10 order-2 min-h-0 flex-1 overflow-y-auto bg-[#151516]/55 px-5 pb-5 pt-0 sm:px-7 lg:order-1 lg:px-8 lg:pl-3 lg:pr-3">
-      <div className="sticky top-0 z-20 -mx-5 mb-3 bg-[#151516]/75 px-5 pb-4 pt-5 backdrop-blur-md sm:-mx-7 sm:px-7 lg:-mx-8 lg:px-8">
+    <section inert={mobileDetailsOpen} className={`catalog-panel hide-scrollbar z-10 order-2 min-h-0 min-w-0 flex-1 overflow-y-auto bg-[#151516]/55 px-3 pb-5 pt-0 sm:px-5 md:order-1 md:block ${mobileDetailsOpen ? 'invisible pointer-events-none absolute inset-0 md:visible md:pointer-events-auto md:relative' : 'relative block'}`}>
+      <div className="sticky top-0 z-20 -mx-3 mb-3 bg-[#151516]/75 px-3 pb-4 pt-5 backdrop-blur-md sm:-mx-5 sm:px-5">
         <div data-catalog-toolbar="true" className="mb-[10.667px] flex justify-center">
-          <div className="flex w-full max-w-3xl items-center gap-2">
+          <div className="catalog-toolbar flex w-full max-w-3xl items-center gap-2">
             <span
               aria-live="polite"
               aria-label={loading ? 'Loading results' : `${filteredMovies.length} results`}
@@ -104,7 +105,7 @@ function CatalogPanel({
             >
               ≤ {isSeriesMode ? 25 : 105} min
             </button>
-            <label className="mx-auto flex h-[2.125rem] min-w-0 max-w-lg flex-1 items-center gap-3 rounded-full border border-white/10 bg-white/[0.04] px-4 py-0 text-text-secondary transition focus-within:border-white/25 focus-within:bg-white/[0.07]">
+            <label className="catalog-search mx-auto flex h-[2.125rem] min-w-0 max-w-lg flex-1 items-center gap-3 rounded-full border border-white/10 bg-white/[0.04] px-4 py-0 text-text-secondary transition focus-within:border-white/25 focus-within:bg-white/[0.07]">
               <Search size={18} className="shrink-0" />
               <input
                 value={search}
@@ -198,7 +199,7 @@ function CatalogPanel({
           {isSeriesMode ? 'No seasons found.' : 'No movies found.'}
         </p>
       ) : (
-        <div data-catalog-grid="true" className="grid grid-cols-2 gap-x-4 gap-y-4 sm:grid-cols-3 sm:gap-x-5 lg:grid-cols-4 lg:gap-x-2.5 lg:gap-y-4">
+        <div data-catalog-grid="true" className="catalog-grid grid gap-x-3 gap-y-4">
           {filteredMovies.map((movie, index) => (
             <MovieCard
               key={movie.id}
