@@ -61,3 +61,8 @@ test('mobile playlist control follows restart in the playback actions', () => {
   const details = readFileSync(new URL('../components/MovieDetails.jsx', import.meta.url), 'utf8')
   assert.match(details, /onClick=\{onRestartPlayback\}[\s\S]*?onClick=\{onTogglePlaylist\}[\s\S]*?md:hidden[\s\S]*?\{playlistAction\}[\s\S]*?Choose episode/)
 })
+
+test('Play and Resume reserve the same space beneath the button', () => {
+  const details = readFileSync(new URL('../components/MovieDetails.jsx', import.meta.url), 'utf8')
+  assert.match(details, /<\/button>\s*<p\s+id=\{remainingTimeId\}\s+aria-hidden=\{!canResume\}\s+className="mt-1 min-h-5/)
+})

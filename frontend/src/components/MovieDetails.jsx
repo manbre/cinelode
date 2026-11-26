@@ -126,9 +126,7 @@ function MovieDetails({
       <div className="mx-auto max-w-md px-4 pb-2 pt-6 md:mx-0 md:max-w-none md:pr-7 lg:pl-5 lg:pr-4">
         <div className="flex flex-col gap-5">
           <div className="flex flex-col items-center gap-x-6 gap-y-3 text-center text-sm text-white/75 md:flex-row md:flex-wrap md:text-left">
-            <div className={`flex max-w-full justify-center gap-2 md:-ml-1 md:shrink-0 md:justify-start md:gap-3 ${
-              canResume ? 'items-start' : 'items-center'
-            }`}>
+            <div className="flex max-w-full items-start justify-center gap-2 md:-ml-1 md:shrink-0 md:justify-start md:gap-3">
               <div className="w-24 shrink-0 md:w-32">
                 <button
                   type="button"
@@ -149,11 +147,13 @@ function MovieDetails({
                     </span>
                   )}
                 </button>
-                {resumeProgress && (
-                  <p id={remainingTimeId} className="mt-1 text-xs tabular-nums text-white/70">
-                    {resumeProgress.remainingMinutes} min left
-                  </p>
-                )}
+                <p
+                  id={remainingTimeId}
+                  aria-hidden={!canResume}
+                  className="mt-1 min-h-5 text-xs leading-5 tabular-nums text-white/70"
+                >
+                  {resumeProgress && `${resumeProgress.remainingMinutes} min left`}
+                </p>
               </div>
               <button
                 type="button"
