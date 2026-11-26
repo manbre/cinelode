@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import CatalogPanel from '../components/CatalogPanel'
 import MovieDetails from '../components/MovieDetails'
 import VideoPlayer from '../components/VideoPlayer'
@@ -87,6 +87,7 @@ function Home({ onLogout, startupReady, setStartupReady }) {
     (state) => state.togglePlaylistItem,
   )
   const clearPlaylist = useCinelodeStore((state) => state.clearPlaylist)
+  const exitDialogRef = useRef(null)
   const exitCancelRef = useRef(null)
   const playerControlsRef = useRef(null)
   const selectionActivatedRef = useRef(false)
@@ -282,6 +283,7 @@ function Home({ onLogout, startupReady, setStartupReady }) {
     [controlsVisible, isFullPlayback, isFullscreen, showPlayerControls],
   )
   const { restoreFocus } = useTvNavigation({
+    modalRef: exitDialogRef,
     onBack: handleBack,
     onDirection: handleDirection,
     onPlayPause: handlePlayPause,
@@ -300,10 +302,12 @@ function Home({ onLogout, startupReady, setStartupReady }) {
     })
     return () => window.cancelAnimationFrame(frame)
   }, [isFullPlayback, isFullscreen, showPlayerControls])
-  useEffect(() => {
-    if (showExitConfirmation) {
-      window.requestAnimationFrame(() => exitCancelRef.current?.focus())
-    }
+  useLayoutEffect(() => {
+    const dialog = exitDialogRef.current
+    if (!showExitConfirmation || !dialog) return
+    dialog.showModal()
+    exitCancelRef.current?.focus()
+    return () => dialog.close()
   }, [showExitConfirmation])
   useEffect(() => {
     if (!selectedMovie) {
@@ -835,11 +839,14 @@ function Home({ onLogout, startupReady, setStartupReady }) {
         )}
       </aside>
       {showExitConfirmation && (
-        <div
+        <dialog
+          ref={exitDialogRef}
           aria-labelledby="exit-dialog-title"
-          aria-modal="true"
-          className="fixed inset-0 z-[60] flex items-center justify-center bg-black/75 p-8"
-          role="dialog"
+          onCancel={(event) => {
+            event.preventDefault()
+            setShowExitConfirmation(false)
+          }}
+          className="fixed inset-0 m-0 h-full max-h-none w-full max-w-none items-center justify-center bg-transparent p-8 text-inherit open:flex backdrop:bg-black/75"
         >
           <div className="w-full max-w-lg rounded-2xl border border-white/15 bg-[#18181b] p-8 text-center shadow-2xl">
             <h2 id="exit-dialog-title" className="text-2xl font-semibold">
@@ -872,7 +879,7 @@ function Home({ onLogout, startupReady, setStartupReady }) {
               </button>
             </div>
           </div>
-        </div>
+        </dialog>
       )}
     </main>
   )

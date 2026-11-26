@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react'
 import {
   getTvKeyAction,
+  handleModalDirection,
   isBlockedVerticalNavigation,
   isTextCursorAtBoundary,
   isWriterRightNavigation,
@@ -188,7 +189,7 @@ function focusCastChipFromWriter(direction) {
   return true
 }
 
-export function useTvNavigation({onBack, onPlayPause, onSeek, onDirection}) {
+export function useTvNavigation({onBack, onPlayPause, onSeek, onDirection, modalRef}) {
   const lastFocused = useRef(null)
 
   useEffect(() => {
@@ -206,7 +207,8 @@ export function useTvNavigation({onBack, onPlayPause, onSeek, onDirection}) {
       const action = getTvKeyAction(event.key)
       if (action === 'up' || action === 'down'
           || action === 'left' || action === 'right') {
-        if (onDirection?.(action)) {
+        if (handleModalDirection(modalRef?.current, document.activeElement, action, focusInDirection)
+            || onDirection?.(action)) {
           event.preventDefault()
           return
         }
@@ -358,7 +360,7 @@ export function useTvNavigation({onBack, onPlayPause, onSeek, onDirection}) {
       document.removeEventListener('focusin', handleFocusIn)
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [onBack, onDirection, onPlayPause, onSeek])
+  }, [modalRef, onBack, onDirection, onPlayPause, onSeek])
 
   const restoreFocus = useCallback(() => {
     if (lastFocused.current?.isConnected) {

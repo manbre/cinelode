@@ -55,3 +55,13 @@ export function isWriterUpNavigation(direction, personRole) {
 export function isWriterRightNavigation(direction, personRole) {
   return direction === 'right' && personRole === 'writer'
 }
+
+export function handleModalDirection(dialog, activeElement, direction, focusInDirection) {
+  if (!dialog?.open) return false
+  if (dialog.contains(activeElement)) {
+    focusInDirection(direction, dialog)
+  } else {
+    dialog.querySelector('button:not([disabled])')?.focus()
+  }
+  return true
+}

@@ -17,13 +17,15 @@ import {
 import config from '../config.json';
 import {isValidFrontendUrl} from './config';
 
+const GIF_RUN_MS = 2520;
+
 export const App = () => {
   const webRef = useRef<React.ElementRef<typeof WebView>>(null);
   const webHistoryCanGoBack = useRef(false);
   const webPlayerIsFullscreen = useRef(false);
   const loadFailed = useRef(false);
   const webViewUrl = useRef(
-    `${config.frontendUrl}?cinelodeLaunch=${Date.now()}&cinelodeNativeLoader=1`,
+    `${config.frontendUrl}?cinelodeLaunch=${Date.now()}&cinelodeNativeLoader=2`,
   ).current;
   const currentWebViewUrl = useRef(webViewUrl);
   const validUrl = isValidFrontendUrl(config.frontendUrl);
@@ -34,6 +36,25 @@ export const App = () => {
     validUrl ? '' : 'Eine gültige Frontend-URL muss konfiguriert werden.',
   );
   const [attempt, setAttempt] = useState(0);
+  const [loaderImageLoaded, setLoaderImageLoaded] = useState(false);
+  const [minimumElapsed, setMinimumElapsed] = useState(false);
+  const showLoader = status === 'loading' || (status === 'ready' && !minimumElapsed);
+
+  useEffect(() => {
+    if (!showLoader || !loaderImageLoaded || minimumElapsed) {
+      return;
+    }
+    const timer = setTimeout(() => setMinimumElapsed(true), GIF_RUN_MS);
+    return () => clearTimeout(timer);
+  }, [loaderImageLoaded, minimumElapsed, showLoader]);
+
+  useEffect(() => {
+    if (status === 'ready' && minimumElapsed) {
+      webRef.current?.injectJavaScript(
+        "window.dispatchEvent(new Event('cinelode-startup-loader-finished')); true;",
+      );
+    }
+  }, [minimumElapsed, status]);
 
   usePreventHideSplashScreen();
   const hideSplashScreen = useHideSplashScreenCallback();
@@ -155,6 +176,10 @@ export const App = () => {
               ) {
                 const messageUrl = nativeEvent.url || currentWebViewUrl.current;
                 if (!loadFailed.current && isFrontendPage(messageUrl)) {
+                  if (parsedMessage.loading && !showLoader) {
+                    setLoaderImageLoaded(false);
+                    setMinimumElapsed(false);
+                  }
                   setStatus(parsedMessage.loading ? 'loading' : 'ready');
                 }
               } else if (
@@ -207,17 +232,22 @@ export const App = () => {
           }}
         />
       )}
-      {status !== 'ready' && (
+      {(showLoader || status === 'error') && (
         <View
           style={[
             styles.overlay,
-            status === 'loading' && styles.loadingOverlay,
+            showLoader && styles.loadingOverlay,
           ]}>
-          {status === 'loading' ? (
+          {showLoader ? (
             <Image
               accessible
               accessibilityLabel="Cinelode wird geladen ..."
               source={require('../assets/image/cinelode-loader.gif')}
+              onLoad={() => {
+                hideSplashScreen();
+                setLoaderImageLoaded(true);
+              }}
+              onError={() => setMinimumElapsed(true)}
               resizeMode="contain"
               style={styles.loader}
             />
@@ -230,6 +260,8 @@ export const App = () => {
               onPress={() => {
                 webHistoryCanGoBack.current = false;
                 loadFailed.current = false;
+                setLoaderImageLoaded(false);
+                setMinimumElapsed(false);
                 setStatus('loading');
                 setAttempt(value => value + 1);
               }}

@@ -11,6 +11,28 @@ function App() {
   const [status, setStatus] = useState('loading')
   const [error, setError] = useState('')
   const [startupReady, setStartupReady] = useState(false)
+  const [loaderFinished, setLoaderFinished] = useState(false)
+  const nativeLoaderVersion = isNativeWebView()
+    && new URLSearchParams(window.location.search).get('cinelodeNativeLoader')
+  const hasNativeLoader = nativeLoaderVersion === '1' || nativeLoaderVersion === '2'
+  const waitsForNativeLoader = nativeLoaderVersion === '2'
+  const loading = status === 'loading' || (status === 'authenticated' && !startupReady)
+
+  useEffect(() => {
+    if (!waitsForNativeLoader) return
+    const finishLoader = () => setLoaderFinished(true)
+    window.addEventListener('cinelode-startup-loader-finished', finishLoader)
+    return () => window.removeEventListener('cinelode-startup-loader-finished', finishLoader)
+  }, [waitsForNativeLoader])
+
+  useEffect(() => {
+    if (hasNativeLoader) {
+      window.ReactNativeWebView.postMessage(JSON.stringify({
+        type: 'cinelode-startup-loading',
+        loading,
+      }))
+    }
+  }, [hasNativeLoader, loading])
 
   useEffect(() => {
     let active = true
@@ -37,6 +59,7 @@ function App() {
 
   const handleLogin = async (username, password) => {
     const authenticatedSession = await login(username, password)
+    setLoaderFinished(false)
     setSession(authenticatedSession)
     setStatus('authenticated')
   }
@@ -61,28 +84,18 @@ function App() {
     content = (
       <Home
         onLogout={devLoginEnabled ? undefined : handleLogout}
-        startupReady={startupReady}
+        startupReady={startupReady && (nativeLoaderVersion === '1' || loaderFinished)}
         setStartupReady={setStartupReady}
       />
     )
   }
 
-  const showLoader = status === 'loading' || (status === 'authenticated' && !startupReady)
-  const hasNativeLoader = isNativeWebView()
-    && new URLSearchParams(window.location.search).get('cinelodeNativeLoader') === '1'
-
-  useEffect(() => {
-    if (hasNativeLoader) {
-      window.ReactNativeWebView.postMessage(JSON.stringify({
-        type: 'cinelode-startup-loading',
-        loading: showLoader,
-      }))
-    }
-  }, [hasNativeLoader, showLoader])
   return (
     <>
       {content}
-      {showLoader && !hasNativeLoader && <StartupLoader />}
+      {!hasNativeLoader && (loading || !loaderFinished) && (
+        <StartupLoader onMinimumElapsed={setLoaderFinished} />
+      )}
     </>
   )
 }

@@ -2,6 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import {
   getTvKeyAction,
+  handleModalDirection,
   isBlockedVerticalNavigation,
   isTextCursorAtBoundary,
   isWriterRightNavigation,
@@ -75,4 +76,26 @@ test('maps rightward navigation from a writer chip to the cast group', () => {
   assert.equal(isWriterRightNavigation('right', 'writer'), true)
   assert.equal(isWriterRightNavigation('right', 'cast'), false)
   assert.equal(isWriterRightNavigation('left', 'writer'), false)
+})
+
+
+test('keeps the D-pad inside an open modal even when there is no target', () => {
+  const cancel = {}
+  const outside = {}
+  let recovered = false
+  const dialog = {
+    open: true,
+    contains: (element) => element === cancel,
+    querySelector: () => ({ focus: () => { recovered = true } }),
+  }
+
+  assert.equal(handleModalDirection(dialog, cancel, 'up', (direction, scope) => {
+    assert.equal(direction, 'up')
+    assert.equal(scope, dialog)
+    return false
+  }), true)
+  assert.equal(handleModalDirection(dialog, outside, 'right', assert.fail), true)
+  assert.equal(recovered, true)
+  dialog.open = false
+  assert.equal(handleModalDirection(dialog, cancel, 'left', assert.fail), false)
 })

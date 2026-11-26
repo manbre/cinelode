@@ -1,5 +1,5 @@
 import * as React from 'react';
-import {fireEvent, render} from '@testing-library/react-native';
+import {act, fireEvent, render} from '@testing-library/react-native';
 import config from '../config.json';
 import {App} from '../src/App';
 import {isValidFrontendUrl} from '../src/config';
@@ -85,11 +85,14 @@ describe('App', () => {
     expect(mockHideSplash).toHaveBeenCalled();
   });
 
-  it('keeps the native GIF visible until the frontend reports readiness', () => {
+  afterEach(() => jest.useRealTimers());
+
+  it('keeps the GIF visible for one full run even if the frontend is ready early', () => {
+    jest.useFakeTimers();
     const screen = render(<App />);
     const webview = screen.getByTestId('cinelode-webview');
     expect(webview.props.source.uri).toMatch(
-      /^https:\/\/cinelode\.example:5173\?cinelodeLaunch=\d+&cinelodeNativeLoader=1$/,
+      /^https:\/\/cinelode\.example:5173\?cinelodeLaunch=\d+&cinelodeNativeLoader=2$/,
     );
     expect(screen.getByLabelText('Cinelode wird geladen ...')).toBeTruthy();
     const back = mockAddBackListener.mock.calls[0][1] as () => boolean;
@@ -101,7 +104,14 @@ describe('App', () => {
     const data = JSON.stringify({type: 'cinelode-startup-loading', loading: false});
     fireEvent(webview, 'message', {nativeEvent: {data, url: 'https://other.example/'}});
     expect(screen.getByLabelText('Cinelode wird geladen ...')).toBeTruthy();
+    fireEvent(screen.getByLabelText('Cinelode wird geladen ...'), 'load');
     fireEvent(webview, 'message', {nativeEvent: {data, url: config.frontendUrl}});
+    act(() => jest.advanceTimersByTime(2519));
+    expect(screen.getByLabelText('Cinelode wird geladen ...')).toBeTruthy();
+    act(() => jest.advanceTimersByTime(1));
+    expect(mockInjectJavaScript).toHaveBeenLastCalledWith(
+      expect.stringContaining('cinelode-startup-loader-finished'),
+    );
     expect(screen.queryByLabelText('Cinelode wird geladen ...')).toBeNull();
     expect(mockHideSplash).toHaveBeenCalled();
     expect(back()).toBe(true);
@@ -111,6 +121,21 @@ describe('App', () => {
     );
     screen.unmount();
     expect(mockRemove).toHaveBeenCalled();
+  });
+
+  it('keeps the GIF visible after one full run if the frontend is still loading', () => {
+    jest.useFakeTimers();
+    const screen = render(<App />);
+    fireEvent(screen.getByLabelText('Cinelode wird geladen ...'), 'load');
+    act(() => jest.advanceTimersByTime(2520));
+    expect(screen.getByLabelText('Cinelode wird geladen ...')).toBeTruthy();
+    fireEvent(screen.getByTestId('cinelode-webview'), 'message', {
+      nativeEvent: {
+        data: JSON.stringify({type: 'cinelode-startup-loading', loading: false}),
+        url: config.frontendUrl,
+      },
+    });
+    expect(screen.queryByLabelText('Cinelode wird geladen ...')).toBeNull();
   });
 
   it('forwards terminal back presses into the WebView', () => {
